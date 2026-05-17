@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electronic Taste | Project Constitution</title>
+    <!-- Prevent search engine indexing for privacy -->
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts for a modern, sleek aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+
+    <!-- Security Gate -->
+    <div id="auth-overlay" class="auth-overlay">
+        <div class="auth-box glassmorphism">
+            <h1>RESTRICTED ACCESS</h1>
+            <p>Please enter the access code to view the Electronic Taste constitution.</p>
+            <input type="password" id="password-input" placeholder="Enter password" />
+            <button id="auth-submit">ENTER</button>
+            <p id="auth-error" class="error-msg"></p>
+        </div>
+    </div>
+
+    <!-- Main Content (Hidden initially) -->
+    <main id="main-content" style="display: none;">
+        <header class="hero">
+            <h1 class="glitch-effect" data-text="Electronic Taste">Electronic Taste</h1>
+            <p class="subtitle">Project Constitution & Documentation</p>
+        </header>
+
+        <nav class="glass-nav">
+            <button class="nav-btn active" data-target="mission">Mission</button>
+            <button class="nav-btn" data-target="roadmap">Roadmap</button>
+            <button class="nav-btn" data-target="tech">Tech Stack</button>
+        </nav>
+
+        <div class="content-container">
+            <section id="mission" class="content-section active glassmorphism">
+                <div id="mission-content" class="markdown-body">Loading Mission...</div>
+            </section>
+            
+            <section id="roadmap" class="content-section glassmorphism">
+                <div id="roadmap-content" class="markdown-body">Loading Roadmap...</div>
+            </section>
+
+            <section id="tech" class="content-section glassmorphism">
+                <div id="tech-content" class="markdown-body">Loading Tech Stack...</div>
+            </section>
+        </div>
+
+        <footer>
+            <p>&copy; Electronic Taste Project</p>
+        </footer>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
