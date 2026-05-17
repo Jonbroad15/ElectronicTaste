@@ -24,10 +24,14 @@
 - [ ] Create a simple user interface to trigger recording and display the predicted subgenre.
 - [ ] Connect the mobile app to the backend prediction API.
 
-## Phase 5: User Feedback and Profiles
+## Phase 5: User Feedback, Profiles & Model Fine-Tuning
 - [ ] Implement user authentication and profiles.
+- [ ] Build a UI to return predicted subgenres to the user and allow them to select the ones they agree with.
 - [ ] Add a rating system allowing users to rate their enjoyment of the identified music (e.g., thumbs up/down, 1–5 stars).
-- [ ] Store categorization history and user feedback in the database.
+- [ ] Store categorization history, subgenre confirmations, and user feedback in the database.
+- [ ] Set up cloud infrastructure (AWS/GCP) to host open-source reasoning models (e.g., Qwen).
+- [ ] Implement Reinforcement Learning with Human Feedback (RLHF) to feed user subgenre selections back into the model.
+- [ ] Apply Reinforcement Learning with Verifiable Rewards (RLVR) to continuously improve the reasoning component's accuracy.
 - [ ] Build a personal taste profile from accumulated ratings and categorizations.
 
 ## Phase 6: Recommendation Engine

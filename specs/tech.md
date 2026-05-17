@@ -31,12 +31,15 @@ This document outlines the technologies and tools under consideration for the El
 | **Feature-based classifier** | Extract audio features → feed into a traditional ML model (Random Forest, SVM, XGBoost) or a small neural network |
 | **End-to-end deep learning** | Feed raw audio (or spectrograms/mel-spectrograms) into a CNN or transformer-based model |
 | **Pre-trained audio models** | Leverage existing models like [PANNs](https://github.com/qiuqiangkong/audioset_tagging_cnn), [OpenL3](https://github.com/marl/openl3), or [CLAP](https://github.com/LAION-AI/CLAP) for audio embeddings, then fine-tune for subgenre classification |
-| **LLM / reasoning model** | Pass extracted features into a reasoning model (e.g., an LLM with music knowledge) to make a subgenre prediction based on feature descriptions |
+| **LLM / reasoning model** | Pass extracted features into a reasoning model (e.g., open-source models like Qwen hosted on AWS/GCP) to make a subgenre prediction |
+| **RLHF (Human Feedback)** | Present predicted subgenres to the user; if they agree/disagree, use this feedback to continuously fine-tune the model |
+| **RLVR (Verifiable Rewards)** | Apply Reinforcement Learning with Verifiable Rewards specifically for the reasoning component to improve logic and extraction accuracy |
 
 ### Research Questions
 - Are there existing open-source models already trained on electronic music subgenre classification?
 - Is end-to-end audio-to-prediction viable on mobile, or do we need a lightweight feature extraction + server-side classification pipeline?
-- Can a reasoning model (LLM) reliably classify subgenres from structured feature descriptions alone?
+- Can a reasoning model reliably classify subgenres from structured feature descriptions alone?
+- How best to structure the RLHF pipeline so that user confirmations of subgenres efficiently update the Qwen/reasoning model?
 
 ---
 
