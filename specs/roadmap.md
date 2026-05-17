@@ -1,9 +1,9 @@
 # Roadmap
 
 ## Phase 1: Project Setup & Homepage
-- [ ] Initialize git repository and project structure.
-- [ ] Create a project constitution (mission, tech stack, roadmap).
-- [ ] Set up a secured GitHub Pages website to host project documentation.
+- [x] Initialize git repository and project structure.
+- [x] Create a project constitution (mission, tech stack, roadmap).
+- [x] Set up a secured GitHub Pages website to host project documentation.
 
 ## Phase 2: Research and Feasibility
 - [ ] Investigate existing open-source machine learning models for music genre and subgenre classification.
