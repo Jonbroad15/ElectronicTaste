@@ -60,8 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         for (const [id, path] of Object.entries(files)) {
             try {
-                // Fetch the markdown file
-                const response = await fetch(path);
+                // Fetch the markdown file with a cache-busting query parameter
+                const cacheBuster = new Date().getTime();
+                const response = await fetch(`${path}?t=${cacheBuster}`, { cache: "no-store" });
                 if (!response.ok) throw new Error('Network response was not ok');
                 const text = await response.text();
                 
