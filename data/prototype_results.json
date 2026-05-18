@@ -1,28 +1,30 @@
 {
-  "llm_accuracy": 0.3111,
-  "rf_accuracy": 0.7944,
-  "dataset_size": 600,
-  "n_subgenres": 12,
-  "feature_importance": {
-    "bpm": 0.3482,
-    "energy": 0.2049,
-    "zero_crossing_rate": 0.1539,
-    "spectral_centroid_hz": 0.1436,
-    "spectral_rolloff_hz": 0.0937,
-    "mfcc_std": 0.0557
+  "llm_accuracy": 0.087,
+  "rf_accuracy": 0.5551,
+  "dataset_size": 2300,
+  "n_subgenres": 23,
+  "top_10_feature_importances": {
+    "71-BPMessentia": 0.0543,
+    "72-bpm_histogram_first_peak_bpm": 0.0474,
+    "bpm": 0.0249,
+    "70-BPMconf": 0.0211,
+    "44-MFCCs2std": 0.017,
+    "39-SpectralSpreadstd": 0.0163,
+    "43-MFCCs1std": 0.0157,
+    "7-SpectralFluxm": 0.0153,
+    "54-MFCCs12std": 0.0148,
+    "9-MFCCs1m": 0.0147
   },
-  "sample_prompts": [
+  "sample_descriptions": [
     {
-      "actual": "Deep House",
-      "predicted": "Deep House",
-      "description": "The track has a moderate tempo of 118 BPM, common in house and disco-influenced genres. The track features balanced timbres with a mix of low-end warmth and high-end presence. The sonic energy is spread across low and mid frequencies. The sonic character is a balanced mix of tonal and percussive elements. The track has moderate loudness with preserved dynamics The timbral palette is wide and varied, suggesting complex arrangements with many different sound sources",
-      "prompt": "You are an expert electronic music classifier. Given the following audio analysis of a track, predict which electronic music subgenre it belongs to.\n\n## Audio Analysis\nThe track has a moderate tempo of 118 BPM, common in house and disco-influenced genres. The track features balanced timbres with a mix of low-end warmth and high-end presence. The sonic energy is spread across low and mid frequencies. The sonic character is a balanced mix of tonal and percussive elements. The track has moderate loudness with preserved dynamics The timbral palette is wide and varied, suggesting complex arrangements with many different sound sources\n\n## Possible Subgenres\nDeep House, Tech House, Techno, Trance, Drum and Bass, Dubstep, House, Hardstyle, Ambient, Progressive House, Electro House, Minimal / Deep Tech\n\n## Instructions\n1. Consider the tempo (BPM) as the primary differentiator.\n2. Use spectral characteristics to distinguish between subgenres with similar tempos.\n3. Consider the percussive vs tonal balance.\n4. Return ONLY the subgenre name, nothing else.\n\n## Prediction:"
+      "actual": "Techno",
+      "predicted": "Minimal",
+      "description": "The track has a moderate tempo of 120 BPM, common in house and disco-influenced genres. The track features very dark and bass-heavy timbres with minimal high-frequency content. Most of the sonic energy is concentrated in the low frequencies (sub-bass and bass). The sonic character is a balanced mix of tonal and percussive elements. The track is loud and compressed, typical of club-ready dance music"
     },
     {
-      "actual": "Minimal / Deep Tech",
-      "predicted": "Electro House",
-      "description": "The track has a standard dance tempo of 130 BPM, typical of house, techno, and trance. The track features warm, mid-range-focused timbres with moderate brightness. The sonic energy is spread across low and mid frequencies. The sonic character is a balanced mix of tonal and percussive elements. The track is loud and compressed, typical of club-ready dance music The timbral palette is wide and varied, suggesting complex arrangements with many different sound sources",
-      "prompt": "You are an expert electronic music classifier. Given the following audio analysis of a track, predict which electronic music subgenre it belongs to.\n\n## Audio Analysis\nThe track has a standard dance tempo of 130 BPM, typical of house, techno, and trance. The track features warm, mid-range-focused timbres with moderate brightness. The sonic energy is spread across low and mid frequencies. The sonic character is a balanced mix of tonal and percussive elements. The track is loud and compressed, typical of club-ready dance music The timbral palette is wide and varied, suggesting complex arrangements with many different sound sources\n\n## Possible Subgenres\nDeep House, Tech House, Techno, Trance, Drum and Bass, Dubstep, House, Hardstyle, Ambient, Progressive House, Electro House, Minimal / Deep Tech\n\n## Instructions\n1. Consider the tempo (BPM) as the primary differentiator.\n2. Use spectral characteristics to distinguish between subgenres with similar tempos.\n3. Consider the percussive vs tonal balance.\n4. Return ONLY the subgenre name, nothing else.\n\n## Prediction:"
+      "actual": "PsyTrance",
+      "predicted": "Trance",
+      "description": "The track has a fast tempo of 150 BPM, suggesting hard techno, psytrance, or hardstyle. The track features very dark and bass-heavy timbres with minimal high-frequency content. Most of the sonic energy is concentrated in the low frequencies (sub-bass and bass). The sonic character is mostly tonal with some percussive transients. The track is very loud and heavily compressed, maximizing energy for peak-time sets"
     }
   ]
 }
