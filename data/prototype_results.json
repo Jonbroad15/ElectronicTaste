@@ -1,6 +1,9 @@
 {
+  "llm_backend": "Claude (claude -p)",
   "llm_accuracy": 0.087,
+  "llm_n_samples": 69,
   "rf_accuracy": 0.5551,
+  "rf_n_samples": 690,
   "dataset_size": 2300,
   "n_subgenres": 23,
   "top_10_feature_importances": {
@@ -17,14 +20,14 @@
   },
   "sample_descriptions": [
     {
-      "actual": "Techno",
-      "predicted": "Minimal",
-      "description": "The track has a moderate tempo of 120 BPM, common in house and disco-influenced genres. The track features very dark and bass-heavy timbres with minimal high-frequency content. Most of the sonic energy is concentrated in the low frequencies (sub-bass and bass). The sonic character is a balanced mix of tonal and percussive elements. The track is loud and compressed, typical of club-ready dance music"
+      "actual": "BigRoom",
+      "predicted": "TechHouse",
+      "description": "The track has a standard dance tempo of 133 BPM, typical of house, techno, and trance. The track features very dark and bass-heavy timbres with minimal high-frequency content. Most of the sonic energy is concentrated in the low frequencies (sub-bass and bass). The sonic character is moderately percussive with sharp transients. The track is loud and compressed, typical of club-ready dance music"
     },
     {
-      "actual": "PsyTrance",
-      "predicted": "Trance",
-      "description": "The track has a fast tempo of 150 BPM, suggesting hard techno, psytrance, or hardstyle. The track features very dark and bass-heavy timbres with minimal high-frequency content. Most of the sonic energy is concentrated in the low frequencies (sub-bass and bass). The sonic character is mostly tonal with some percussive transients. The track is very loud and heavily compressed, maximizing energy for peak-time sets"
+      "actual": "BigRoom",
+      "predicted": "TechHouse",
+      "description": "The track has a standard dance tempo of 133 BPM, typical of house, techno, and trance. The track features very dark and bass-heavy timbres with minimal high-frequency content. Most of the sonic energy is concentrated in the low frequencies (sub-bass and bass). The sonic character is a balanced mix of tonal and percussive elements. The track is loud and compressed, typical of club-ready dance music"
     }
   ]
 }

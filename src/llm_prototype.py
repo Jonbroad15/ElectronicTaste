@@ -1,25 +1,28 @@
 """
 LLM Reasoning Prototype for EDM Subgenre Classification
 ========================================================
-Phase 2, Step 3: Test whether an LLM can classify electronic music
-subgenres from structured audio feature descriptions.
+Phase 2, Step 3: Test whether Claude can classify electronic music
+subgenres from structured audio feature descriptions, and compare
+against a traditional Random Forest classifier.
 
-This prototype:
-1. Generates a synthetic Beatport-style dataset (or loads a real one)
-2. Applies the Semantic Translation Layer to convert features to text
-3. Tests a rule-based "LLM simulator" to establish a baseline
-4. Compares against a traditional ML classifier (Random Forest)
-5. Outputs accuracy metrics for both approaches
+Usage:
+  # Synthetic data, rule-based sim:
+  python src/llm_prototype.py
 
-To use with the REAL Kaggle Beatport dataset:
-  1. Download from: https://www.kaggle.com/datasets/caparrini/electronic-music-features-201611-beatporttop100
-  2. Place the CSV file at: data/beatport_top100.csv
-  3. Run: python src/llm_prototype.py --dataset data/beatport_top100.csv
+  # Real Beatport dataset, rule-based sim:
+  python src/llm_prototype.py --dataset data/beatsdataset_full.csv
+
+  # Real dataset + actual Claude LLM (samples 3 tracks/subgenre):
+  python src/llm_prototype.py --dataset data/beatsdataset_full.csv --use-claude
+
+  # Real dataset + Claude, 5 tracks per subgenre:
+  python src/llm_prototype.py --dataset data/beatsdataset_full.csv --use-claude --llm-sample 5
 """
 
 import argparse
 import json
 import os
+import subprocess
 import sys
 import warnings
 
@@ -130,68 +133,42 @@ def load_beatport_dataset(csv_path):
 
 def rule_based_llm_classifier(description):
     """
-    Simulates how an LLM would reason about a track's subgenre given a
-    natural language description of its audio features.
-    
-    In production, this would be replaced with an actual LLM API call
-    (e.g., Qwen hosted on AWS/GCP). This rule-based version tests whether
-    the semantic translation layer provides enough signal for classification.
+    Rule-based baseline that simulates LLM reasoning.
+    Kept for comparison — see claude_llm_classifier() for the real thing.
     """
     desc_lower = description.lower()
-    
-    # Decision tree mimicking LLM reasoning chains.
-    # The semantic translator embeds genre hints in tempo descriptions,
-    # so we check for those keywords first.
-    
-    # ── Extreme tempo ranges (unambiguous) ──
     if "extremely fast" in desc_lower:
         return "Drum and Bass"
-    
     if "very fast" in desc_lower:
-        # The translator says "drum and bass or jungle" for 160-175 BPM
         if "drum and bass" in desc_lower or "jungle" in desc_lower:
             return "Drum and Bass"
         return "Hardstyle"
-    
     if "fast tempo" in desc_lower:
-        # 145-160 BPM range: hardstyle, psytrance, hard techno
         if "psytrance" in desc_lower:
             return "Trance"
-        if "hardstyle" in desc_lower:
-            return "Hardstyle"
         return "Hardstyle"
-    
     if "very slow" in desc_lower:
         return "Ambient"
-    
     if "slow-to-moderate" in desc_lower:
         if "dark" in desc_lower or "bass-heavy" in desc_lower:
             return "Ambient"
         return "Deep House"
-    
-    # ── Elevated tempo: 135-145 BPM ──
     if "elevated tempo" in desc_lower:
         if "bright" in desc_lower or "harsh" in desc_lower:
             return "Techno"
         if "percussive" in desc_lower:
             return "Tech House"
         return "Trance"
-    
-    # ── Standard dance tempo: 125-135 BPM ──
     if "standard dance tempo" in desc_lower:
         if "bright" in desc_lower and "percussive" in desc_lower:
             return "Electro House"
         if "dark" in desc_lower or "bass-heavy" in desc_lower:
             return "Dubstep"
-        if "balanced" in desc_lower and "percussive" in desc_lower:
-            return "Techno"
         if "warm" in desc_lower:
             if "tonal" in desc_lower and "smooth" in desc_lower:
                 return "Deep House"
             return "Progressive House"
         return "Trance"
-    
-    # ── Moderate tempo: 110-125 BPM ──
     if "moderate tempo" in desc_lower:
         if "dark" in desc_lower or "bass-heavy" in desc_lower:
             return "Minimal / Deep Tech"
@@ -202,9 +179,32 @@ def rule_based_llm_classifier(description):
         if "bright" in desc_lower:
             return "Tech House"
         return "House"
-    
-    # Fallback
     return "House"
+
+
+def claude_llm_classifier(prompt):
+    """
+    Calls the Claude CLI (`claude -p`) with the classification prompt and
+    returns the stripped single-line prediction.
+    Falls back to 'Unknown' if the call fails.
+    """
+    try:
+        result = subprocess.run(
+            ["claude", "-p", prompt],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        # Strip ANSI escape codes and whitespace, take first non-empty line
+        raw = result.stdout
+        # Remove common ANSI sequences
+        import re
+        clean = re.sub(r'\x1b\[[0-9;]*[a-zA-Z]', '', raw)
+        lines = [l.strip() for l in clean.splitlines() if l.strip()]
+        return lines[0] if lines else "Unknown"
+    except Exception as e:
+        print(f"  ⚠️  Claude call failed: {e}")
+        return "Unknown"
 
 
 # Maps our human-readable classifier output to the dataset's CamelCase labels.
@@ -234,32 +234,41 @@ def normalise_prediction(label, dataset_labels):
 
 def build_llm_prompt(description, subgenre_list):
     """
-    Constructs the full prompt that would be sent to an LLM like Qwen.
-    This is saved for reference / future API integration.
+    Constructs the classification prompt for Claude (or Qwen in production).
+    The subgenre list is passed in so it always matches the actual dataset labels.
     """
-    genres_str = ", ".join(subgenre_list)
+    genres_str = ", ".join(sorted(subgenre_list))
     
-    prompt = f"""You are an expert electronic music classifier. Given the following audio analysis of a track, predict which electronic music subgenre it belongs to.
-
-## Audio Analysis
-{description}
-
-## Possible Subgenres
-{genres_str}
-
-## Instructions
-1. Consider the tempo (BPM) as the primary differentiator.
-2. Use spectral characteristics to distinguish between subgenres with similar tempos.
-3. Consider the percussive vs tonal balance.
-4. Return ONLY the subgenre name, nothing else.
-
-## Prediction:"""
-    
+    prompt = (
+        "You are an expert electronic music classifier. "
+        "Given the following audio analysis of a track, predict which electronic "
+        "music subgenre it belongs to.\n\n"
+        "## Audio Analysis\n"
+        f"{description}\n\n"
+        "## Possible Subgenres\n"
+        f"{genres_str}\n\n"
+        "## Instructions\n"
+        "1. Consider the tempo (BPM) as the primary differentiator between subgenres.\n"
+        "2. Use spectral brightness and energy to distinguish subgenres with similar BPMs.\n"
+        "3. Consider the percussive vs tonal balance.\n"
+        "4. Your response MUST be EXACTLY one of the subgenre names listed above — "
+        "copy it verbatim, no extra words, no punctuation.\n\n"
+        "Subgenre:"
+    )
     return prompt
 
 
-def run_prototype(dataset_path=None):
-    """Main prototype execution."""
+def run_prototype(dataset_path=None, use_claude=False, llm_sample=3):
+    """
+    Main prototype execution.
+
+    Args:
+        dataset_path: Path to a Beatport CSV. None = synthetic data.
+        use_claude:   If True, call Claude CLI for LLM classification.
+                      If False, use the rule-based simulator.
+        llm_sample:   Number of tracks per subgenre to send to Claude
+                      (to keep runtime/cost reasonable). Default: 3.
+    """
     print("=" * 70)
     print("  Electronic Taste — LLM Reasoning Model Prototype")
     print("  Phase 2, Step 3: Subgenre Classification via Feature Descriptions")
@@ -302,36 +311,64 @@ def run_prototype(dataset_path=None):
     print(f"\n📊 Dataset split: {len(X_ml_train)} train, {len(X_ml_test)} test")
 
     
-    # ── Step 3: Semantic Translation + Rule-Based LLM Classifier ──
+    # ── Step 3: Semantic Translation + LLM Classification ──
+    dataset_labels = sorted(y.unique().tolist())
+    llm_label = "Claude (claude -p)" if use_claude else "Rule-Based Simulator"
+
     print("\n" + "─" * 70)
-    print("  TEST A: Semantic Translation → LLM Reasoning (Rule-Based Simulation)")
+    print(f"  TEST A: Semantic Translation → LLM Reasoning ({llm_label})")
     print("─" * 70)
-    
+
+    # When using Claude, sample a fixed number of tracks per subgenre
+    # to keep runtime reasonable (full 690-track run would take ~15 min).
+    if use_claude:
+        test_df = pd.concat([
+            X_llm_test.join(y_test)
+              .groupby('subgenre', group_keys=False)
+              .apply(lambda g: g.sample(min(llm_sample, len(g)), random_state=42))
+        ])
+        X_llm_eval = test_df.drop(columns=['subgenre'])
+        y_llm_eval = test_df['subgenre']
+        n_calls = len(X_llm_eval)
+        print(f"  Using Claude CLI — sampling {llm_sample} tracks × {len(dataset_labels)} subgenres = {n_calls} API calls")
+    else:
+        X_llm_eval = X_llm_test
+        y_llm_eval = y_test
+
     llm_predictions = []
-    sample_prompts = []
-    dataset_labels = set(y.unique())
-    
-    for idx, row in X_llm_test.iterrows():
-        features = row.to_dict()
+    sample_prompts  = []
+
+    for i, (idx, row) in enumerate(X_llm_eval.iterrows()):
+        features    = row.to_dict()
         description = translate_features_to_description(features)
-        raw_prediction = rule_based_llm_classifier(description)
-        prediction = normalise_prediction(raw_prediction, dataset_labels)
+        prompt      = build_llm_prompt(description, dataset_labels)
+
+        if use_claude:
+            raw = claude_llm_classifier(prompt)
+            # Claude should return one of the dataset labels verbatim
+            # but strip stray whitespace / punctuation just in case
+            raw = raw.strip().rstrip('.')
+            prediction = raw if raw in dataset_labels else normalise_prediction(raw, set(dataset_labels))
+            if (i + 1) % 10 == 0 or i == 0:
+                print(f"  [{i+1}/{n_calls}] actual={y_llm_eval.iloc[i]:25s}  predicted={prediction}")
+        else:
+            raw        = rule_based_llm_classifier(description)
+            prediction = normalise_prediction(raw, set(dataset_labels))
+
         llm_predictions.append(prediction)
-        
-        # Save a few sample prompts for inspection
+
         if len(sample_prompts) < 3:
-            prompt = build_llm_prompt(description, list(SUBGENRE_PROFILES.keys()))
             sample_prompts.append({
-                "actual": y_test.iloc[len(sample_prompts)],
-                "predicted": prediction,
+                "actual":      y_llm_eval.iloc[len(sample_prompts)],
+                "predicted":   prediction,
                 "description": description,
-                "prompt": prompt
+                "prompt":      prompt,
             })
-    
-    llm_accuracy = accuracy_score(y_test, llm_predictions)
-    print(f"\n✅ LLM Simulator Accuracy: {llm_accuracy:.1%}")
+
+    llm_accuracy = accuracy_score(y_llm_eval, llm_predictions)
+    print(f"\n✅ {llm_label} Accuracy: {llm_accuracy:.1%}  (on {len(y_llm_eval)} tracks)")
     print(f"\nClassification Report:")
-    print(classification_report(y_test, llm_predictions, zero_division=0))
+    print(classification_report(y_llm_eval, llm_predictions, zero_division=0))
     
     # ── Step 4: Traditional ML Baseline (Random Forest, full 92-feature set) ──
     print("─" * 70)
@@ -393,15 +430,20 @@ def run_prototype(dataset_path=None):
     
     print()
     print("  📝 Next Steps:")
-    print("     1. Replace rule_based_llm_classifier() with actual Qwen API calls.")
+    if not use_claude:
+        print("     1. Re-run with --use-claude to benchmark the real LLM.")
     print("     2. Enrich semantic translator with MFCC, chroma, onset features (Phase 3).")
-    print("     3. Begin collecting RLHF data from user confirmations in the mobile app.")
+    print("     3. Deploy Qwen on AWS/GCP and swap in for Claude (Phase 4).")
+    print("     4. Begin collecting RLHF data from user confirmations in the mobile app.")
     print("=" * 70)
     
     # Save results as JSON for the validation phase
     results = {
+        "llm_backend": llm_label,
         "llm_accuracy": round(llm_accuracy, 4),
+        "llm_n_samples": len(y_llm_eval),
         "rf_accuracy": round(rf_accuracy, 4),
+        "rf_n_samples": len(y_ml_test),
         "dataset_size": len(df),
         "n_subgenres": df['subgenre'].nunique(),
         "top_10_feature_importances": {f: round(float(i), 4) for f, i in importances},
@@ -421,8 +463,16 @@ def run_prototype(dataset_path=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="LLM Subgenre Classification Prototype")
-    parser.add_argument("--dataset", type=str, default=None,
-                        help="Path to a Beatport CSV dataset. If not provided, uses synthetic data.")
+    parser.add_argument("--dataset",    type=str,  default=None,
+                        help="Path to Beatport CSV. Omit to use synthetic data.")
+    parser.add_argument("--use-claude", action="store_true",
+                        help="Use real Claude CLI calls instead of the rule-based simulator.")
+    parser.add_argument("--llm-sample", type=int,  default=3,
+                        help="Tracks per subgenre to send to Claude (default: 3).")
     args = parser.parse_args()
-    
-    run_prototype(dataset_path=args.dataset)
+
+    run_prototype(
+        dataset_path=args.dataset,
+        use_claude=args.use_claude,
+        llm_sample=args.llm_sample,
+    )
