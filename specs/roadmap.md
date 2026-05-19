@@ -6,11 +6,11 @@
 - [x] Set up a secured GitHub Pages website to host project documentation.
 
 ## Phase 2: Research and Feasibility
-- [ ] Investigate existing open-source machine learning models for music genre and subgenre classification.
-- [ ] Evaluate tools and libraries for audio feature extraction (BPM, vocals, instruments).
-- [ ] Determine the most viable approach: end-to-end audio classification vs. feature extraction followed by a reasoning/classification model.
-- [ ] Research whether a reasoning model (LLM) can reliably classify subgenres from structured feature descriptions.
-- [ ] Identify and collect suitable training datasets for electronic music subgenres.
+- [x] Investigate existing open-source machine learning models for music genre and subgenre classification.
+- [x] Evaluate tools and libraries for audio feature extraction (BPM, vocals, instruments).
+- [x] Determine the most viable approach: end-to-end audio classification vs. feature extraction followed by a reasoning/classification model.
+- [x] Research whether a reasoning model (LLM) can reliably classify subgenres from structured feature descriptions.
+- [x] Identify and collect suitable training datasets for electronic music subgenres.
 
 ## Phase 3: Core Audio Processing & ML Prototype
 - [ ] Develop a backend script to ingest audio files and extract key audio features (BPM, spectral features, vocal detection, rhythmic patterns).

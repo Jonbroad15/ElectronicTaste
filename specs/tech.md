@@ -2,44 +2,87 @@
 
 ## Overview
 
-This document outlines the technologies and tools under consideration for the Electronic Taste project. Choices may evolve as the research phase (Phase 1) progresses and we learn more about what works best for real-time audio classification.
+This document defines the finalized technologies and architecture for the Electronic Taste project. Decisions are based on the Phase 2 research findings, including a validated MERT prototype that achieved 64.5% accuracy on 10-genre classification using a frozen encoder on local hardware.
 
 ---
 
-## Audio Feature Extraction
+## Classification Architecture (Finalized)
+
+### Primary Pipeline: MERT + Fine-Tuning
+
+```
+Mobile Mic → Audio Capture (5s clip) → Backend API
+                                          ↓
+                                   MERT Encoder (frozen or fine-tuned)
+                                          ↓
+                                   768-dim Embedding
+                                          ↓
+                                   Classification Head → Subgenre Prediction
+                                          ↓
+                                   User Feedback (RLHF)
+```
+
+### Core Model: MERT (Music Audio Representation Transformer)
+
+| Property | Value |
+|---|---|
+| **Model** | [MERT-v1-95M](https://huggingface.co/m-a-p/MERT-v1-95M) (primary) / [MERT-v1-330M](https://huggingface.co/m-a-p/MERT-v1-330M) (upgrade path) |
+| **Type** | Self-supervised music foundation model (BERT-style transformer) |
+| **Input** | Raw audio waveform (24kHz) |
+| **Output** | 768-dim embeddings per time step → mean-pooled |
+| **Parameters** | 94.4M (95M variant) / 330M (330M variant) |
+| **Inference Speed** | 0.14s per 5s clip (validated on Apple Silicon MPS) |
+| **Memory** | ~2–3 GB (fits comfortably in 16GB unified memory) |
+| **License** | Open source |
+
+**Why MERT**: Purpose-built for music understanding. Directly ingests raw audio — no manual feature extraction needed. Captures both timbral and structural features through dual-teacher SSL (acoustic RVQ-VAE + musical CQT). Validated locally with musically-sensible confusion patterns.
+
+### Classification Head
+
+```python
+nn.Sequential(
+    nn.LayerNorm(768),
+    nn.Linear(768, 256),
+    nn.ReLU(),
+    nn.Dropout(0.3),
+    nn.Linear(256, num_subgenres),
+)
+```
+
+### Fallback / Comparison Models
+
+| Model | Role | Notes |
+|---|---|---|
+| [CLAP](https://github.com/LAION-AI/CLAP) (86M params) | Zero-shot prototyping | Classify with text prompts, no training needed |
+| [PANNs CNN14](https://github.com/qiuqiangkong/audioset_tagging_cnn) (80M) | Baseline comparison | Well-documented, fast |
+| [Qwen2-Audio](https://huggingface.co/Qwen/Qwen2-Audio-7B-Instruct) (8.2B) | Future RLHF reasoning layer | Conversational UX, too large for primary classifier |
+
+---
+
+## Audio Feature Extraction (Supplementary)
+
+> **Note**: MERT ingests raw audio directly. Librosa is retained for data augmentation, preprocessing, and any tempo-feature fusion experiments.
 
 | Tool / Library | Purpose |
 |---|---|
-| [Librosa](https://librosa.org/) | Python library for audio analysis — BPM detection, spectrograms, MFCCs, chroma features, onset detection |
-| [Essentia](https://essentia.upf.edu/) | Open-source C++/Python library for audio analysis and music information retrieval (MIR) |
-| [Aubio](https://aubio.org/) | Lightweight library for real-time audio labeling — pitch, onset, and BPM detection |
+| [Librosa](https://librosa.org/) | Audio preprocessing, BPM detection, tempogram extraction for augmentation |
 
-### Key Features to Extract
-- **BPM (tempo)** — Critical differentiator across electronic subgenres
-- **Spectral features** — MFCCs, spectral centroid, spectral rolloff
-- **Rhythmic patterns** — Onset density, beat grid regularity
-- **Vocal detection** — Presence or absence of vocals
-- **Instrumentation cues** — Synth types, bass weight, percussive characteristics
-- **Energy / loudness profile** — Dynamic range, drop detection
+### Audio Preprocessing Pipeline
+1. **Capture**: 5-second audio clip from mobile microphone
+2. **Resample**: Convert to 24kHz mono (MERT's expected input format)
+3. **Normalize**: Peak normalize to [-1, 1]
+4. **Send**: Transmit to backend API for MERT inference
 
 ---
 
-## Machine Learning & Classification
+## Data & Datasets (Finalized)
 
-| Approach | Description |
-|---|---|
-| **Feature-based classifier** | Extract audio features → feed into a traditional ML model (Random Forest, SVM, XGBoost) or a small neural network |
-| **End-to-end deep learning** | Feed raw audio (or spectrograms/mel-spectrograms) into a CNN or transformer-based model |
-| **Pre-trained audio models** | Leverage existing models like [PANNs](https://github.com/qiuqiangkong/audioset_tagging_cnn), [OpenL3](https://github.com/marl/openl3), or [CLAP](https://github.com/LAION-AI/CLAP) for audio embeddings, then fine-tune for subgenre classification |
-| **LLM / reasoning model** | Pass extracted features into a reasoning model (e.g., open-source models like Qwen hosted on AWS/GCP) to make a subgenre prediction |
-| **RLHF (Human Feedback)** | Present predicted subgenres to the user; if they agree/disagree, use this feedback to continuously fine-tune the model |
-| **RLVR (Verifiable Rewards)** | Apply Reinforcement Learning with Verifiable Rewards specifically for the reasoning component to improve logic and extraction accuracy |
-
-### Research Questions
-- Are there existing open-source models already trained on electronic music subgenre classification?
-- Is end-to-end audio-to-prediction viable on mobile, or do we need a lightweight feature extraction + server-side classification pipeline?
-- Can a reasoning model reliably classify subgenres from structured feature descriptions alone?
-- How best to structure the RLHF pipeline so that user confirmations of subgenres efficiently update the Qwen/reasoning model?
+| Source | Has Audio? | Subgenres | Status |
+|---|---|---|---|
+| **GTZAN** (HuggingFace) | ✅ 30s WAV | 10 broad genres | ✅ Downloaded (`data/gtzan_audio/`) — pipeline validation |
+| **Beatport Top 100** (Kaggle) | ❌ Features CSV only | 20+ EDM subgenres | ✅ In `data/` — feature-based baseline |
+| **MTG-Jamendo** (HuggingFace) | ✅ Full-length MP3 | ~16K electronic tracks | 🔜 Next download — EDM fine-tuning |
+| User-generated data | ✅ | Custom taxonomy | Future — RLHF feedback loop |
 
 ---
 
@@ -57,36 +100,58 @@ This document outlines the technologies and tools under consideration for the El
 
 | Technology | Purpose |
 |---|---|
-| **Python (FastAPI / Flask)** | Backend API for receiving audio data and returning predictions |
+| **Python (FastAPI)** | Backend API for receiving audio data and returning predictions |
+| **PyTorch + HuggingFace Transformers** | MERT model loading, inference, and fine-tuning |
 | **PostgreSQL** or **SQLite** | Database for user profiles, categorization history, and feedback |
 | **Redis** (optional) | Caching layer for frequently accessed data |
 | **Docker** | Containerized deployment for the ML model and API |
-| **Cloud provider (TBD)** | Hosting for the prediction service (AWS, GCP, or similar) |
+| **GCP** (primary) | Hosting for the prediction service — GPU instances for inference |
+
+### Inference Hardware Requirements
+
+| Stage | Hardware | Notes |
+|---|---|---|
+| **Development / prototyping** | Apple Silicon Mac (16GB) | MERT-95M runs locally via MPS backend |
+| **Production inference** | GCP T4 or L4 GPU | ~$0.35–0.70/hr, handles MERT-330M comfortably |
+| **Fine-tuning** | GCP A100 or Colab T4 | 6–12 hours for MERT fine-tuning on ~16K tracks |
 
 ---
 
-## Recommendation Engine
+## Recommendation Engine (Phase 5)
 
 | Approach | Description |
 |---|---|
+| **Content-based filtering** | Recommend based on MERT embedding similarity to tracks the user has rated highly |
 | **Collaborative filtering** | Recommend based on similar users' preferences |
-| **Content-based filtering** | Recommend based on audio feature similarity to tracks the user has rated highly |
-| **Hybrid approach** | Combine collaborative and content-based signals for stronger recommendations |
+| **Hybrid approach** | Combine embedding similarity and collaborative signals |
+
+> **Note**: MERT embeddings double as the recommendation engine's feature backbone. Tracks with similar 768-dim embeddings will sound similar — enabling "find more like this" without a separate feature pipeline.
 
 ---
 
-## Data & Datasets
+## RLHF / Feedback Loop (Phase 5+)
 
-| Source | Description |
-|---|---|
-| [FMA (Free Music Archive)](https://github.com/mdeff/fma) | Large-scale music dataset with genre labels |
-| [Beatport / genre-tagged datasets](https://www.beatport.com/) | Electronic music marketplace with detailed subgenre tagging (potential data source) |
-| User-generated data | Categorized and rated audio clips collected through the app over time |
+```
+User hears track → App predicts "Melodic Techno"
+                      ↓
+            User confirms ✅ or corrects → "Progressive House"
+                      ↓
+            Feedback stored in database
+                      ↓
+            Periodic fine-tuning of classification head
+                      ↓
+            (Future) Qwen2-Audio reasoning layer for ambiguous cases
+```
 
 ---
 
-## Notes
+## Validated Decisions (Phase 2 Research)
 
-- The tech stack is intentionally broad at this stage. Phase 1 (Research & Feasibility) will narrow down the best tools and approaches.
-- Mobile framework choice will depend on audio capture performance and ML integration ease.
-- The recommendation engine is a Phase 5 concern but is documented here for planning purposes.
+| Decision | Status | Evidence |
+|---|---|---|
+| MERT as primary classifier | ✅ Validated | 64.5% on GTZAN (frozen encoder, 5s clips, minimal classifier) |
+| Raw audio ingestion (not feature→LLM) | ✅ Decided | End-to-end models outperform feature pipelines; removes Librosa fragility |
+| Apple Silicon local inference | ✅ Validated | 0.14s/file, ~2–3GB memory on MPS |
+| Librosa → Qwen text pipeline | ❌ Deprecated | Fragile, lower accuracy ceiling, unnecessary indirection |
+| GTZAN for pipeline validation | ✅ Complete | 999 files processed, musically-sensible confusions |
+| Beatport CSV for feature baseline | ✅ Available | In `data/`, ready for RF/XGBoost comparison |

@@ -1,0 +1,232 @@
+{
+  "timestamp": "2026-05-18T20:20:34.524467",
+  "model": "m-a-p/MERT-v1-95M",
+  "device": "mps",
+  "dataset": "GTZAN",
+  "num_genres": 10,
+  "genre_names": [
+    "blues",
+    "classical",
+    "country",
+    "disco",
+    "hiphop",
+    "jazz",
+    "metal",
+    "pop",
+    "reggae",
+    "rock"
+  ],
+  "train_size": 799,
+  "test_size": 200,
+  "embedding_dim": 768,
+  "param_count": 94371712,
+  "best_test_accuracy": 0.645,
+  "per_class_accuracy": {
+    "blues": {
+      "correct": 11,
+      "total": 20,
+      "accuracy": 0.55
+    },
+    "classical": {
+      "correct": 19,
+      "total": 20,
+      "accuracy": 0.95
+    },
+    "country": {
+      "correct": 12,
+      "total": 20,
+      "accuracy": 0.6
+    },
+    "disco": {
+      "correct": 11,
+      "total": 20,
+      "accuracy": 0.55
+    },
+    "hiphop": {
+      "correct": 11,
+      "total": 20,
+      "accuracy": 0.55
+    },
+    "jazz": {
+      "correct": 10,
+      "total": 20,
+      "accuracy": 0.5
+    },
+    "metal": {
+      "correct": 16,
+      "total": 20,
+      "accuracy": 0.8
+    },
+    "pop": {
+      "correct": 17,
+      "total": 20,
+      "accuracy": 0.85
+    },
+    "reggae": {
+      "correct": 10,
+      "total": 20,
+      "accuracy": 0.5
+    },
+    "rock": {
+      "correct": 11,
+      "total": 20,
+      "accuracy": 0.55
+    }
+  },
+  "top_confusions": {
+    "hiphop \u2192 reggae": 5,
+    "jazz \u2192 reggae": 4,
+    "rock \u2192 country": 4,
+    "blues \u2192 jazz": 3,
+    "disco \u2192 rock": 3,
+    "jazz \u2192 blues": 3,
+    "metal \u2192 rock": 3,
+    "reggae \u2192 disco": 3,
+    "blues \u2192 metal": 2,
+    "blues \u2192 rock": 2
+  },
+  "training_history": [
+    {
+      "epoch": 1,
+      "train_loss": 2.3608,
+      "train_acc": 0.0989,
+      "test_loss": 2.2162,
+      "test_acc": 0.265
+    },
+    {
+      "epoch": 2,
+      "train_loss": 2.2196,
+      "train_acc": 0.2003,
+      "test_loss": 2.1463,
+      "test_acc": 0.31
+    },
+    {
+      "epoch": 3,
+      "train_loss": 2.1364,
+      "train_acc": 0.3066,
+      "test_loss": 2.0542,
+      "test_acc": 0.385
+    },
+    {
+      "epoch": 4,
+      "train_loss": 2.0366,
+      "train_acc": 0.3705,
+      "test_loss": 1.9585,
+      "test_acc": 0.475
+    },
+    {
+      "epoch": 5,
+      "train_loss": 1.9232,
+      "train_acc": 0.4906,
+      "test_loss": 1.8716,
+      "test_acc": 0.515
+    },
+    {
+      "epoch": 6,
+      "train_loss": 1.8444,
+      "train_acc": 0.5169,
+      "test_loss": 1.787,
+      "test_acc": 0.54
+    },
+    {
+      "epoch": 7,
+      "train_loss": 1.7454,
+      "train_acc": 0.5682,
+      "test_loss": 1.702,
+      "test_acc": 0.545
+    },
+    {
+      "epoch": 8,
+      "train_loss": 1.6535,
+      "train_acc": 0.5645,
+      "test_loss": 1.6218,
+      "test_acc": 0.555
+    },
+    {
+      "epoch": 9,
+      "train_loss": 1.5762,
+      "train_acc": 0.602,
+      "test_loss": 1.5495,
+      "test_acc": 0.53
+    },
+    {
+      "epoch": 10,
+      "train_loss": 1.5099,
+      "train_acc": 0.5857,
+      "test_loss": 1.4854,
+      "test_acc": 0.525
+    },
+    {
+      "epoch": 11,
+      "train_loss": 1.4411,
+      "train_acc": 0.5957,
+      "test_loss": 1.427,
+      "test_acc": 0.55
+    },
+    {
+      "epoch": 12,
+      "train_loss": 1.3547,
+      "train_acc": 0.6333,
+      "test_loss": 1.3733,
+      "test_acc": 0.57
+    },
+    {
+      "epoch": 13,
+      "train_loss": 1.317,
+      "train_acc": 0.6195,
+      "test_loss": 1.3244,
+      "test_acc": 0.585
+    },
+    {
+      "epoch": 14,
+      "train_loss": 1.2551,
+      "train_acc": 0.6421,
+      "test_loss": 1.2796,
+      "test_acc": 0.61
+    },
+    {
+      "epoch": 15,
+      "train_loss": 1.1896,
+      "train_acc": 0.6383,
+      "test_loss": 1.2387,
+      "test_acc": 0.625
+    },
+    {
+      "epoch": 16,
+      "train_loss": 1.1428,
+      "train_acc": 0.6758,
+      "test_loss": 1.2002,
+      "test_acc": 0.635
+    },
+    {
+      "epoch": 17,
+      "train_loss": 1.1102,
+      "train_acc": 0.6796,
+      "test_loss": 1.1657,
+      "test_acc": 0.63
+    },
+    {
+      "epoch": 18,
+      "train_loss": 1.0343,
+      "train_acc": 0.6896,
+      "test_loss": 1.1347,
+      "test_acc": 0.645
+    },
+    {
+      "epoch": 19,
+      "train_loss": 1.0186,
+      "train_acc": 0.6996,
+      "test_loss": 1.1057,
+      "test_acc": 0.64
+    },
+    {
+      "epoch": 20,
+      "train_loss": 0.9818,
+      "train_acc": 0.7121,
+      "test_loss": 1.0783,
+      "test_acc": 0.64
+    }
+  ],
+  "extraction_time_seconds": 138.72,
+  "seconds_per_file": 0.14
+}

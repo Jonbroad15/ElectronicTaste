@@ -5,3 +5,7 @@ __pycache__/
 dummy_track.wav
 data/beatsdataset_*
 data/kaggle-edm-data.zip
+data/*.csv
+data/*.zip
+data/gtzan_audio/
+data/kaggle-edm-data/
