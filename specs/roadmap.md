@@ -13,9 +13,9 @@
 - [x] Identify and collect suitable training datasets for electronic music subgenres.
 
 ## Phase 3: Core Audio Processing & ML Prototype
-- [ ] Develop a backend script to ingest audio files and extract key audio features (BPM, spectral features, vocal detection, rhythmic patterns).
-- [ ] Train or integrate a machine learning model to predict electronic music subgenres from the extracted features or raw audio.
-- [ ] Validate the model's accuracy with a test dataset of various electronic subgenres.
+- [ ] Develop a backend script to ingest audio files and extract embeddings using the zero-shot MERT model.
+- [ ] Integrate the zero-shot MERT model to predict electronic music subgenres directly from raw audio.
+- [ ] Validate the zero-shot model's accuracy on a test dataset, targeting at least 70% accuracy.
 - [ ] Benchmark inference speed to ensure it's viable for near-real-time predictions.
 
 ## Phase 4: Cloud Infrastructure & Model Deployment
@@ -30,13 +30,11 @@
 - [ ] Create a simple user interface to trigger recording and display the predicted subgenre.
 - [ ] Connect the mobile app to the cloud-hosted prediction API.
 
-## Phase 6: User Feedback, Profiles & Model Fine-Tuning
+## Phase 6: User Feedback & Profiles
 - [ ] Implement user authentication and profiles.
 - [ ] Build a UI to return predicted subgenres to the user and allow them to select the ones they agree with.
 - [ ] Add a rating system allowing users to rate their enjoyment of the identified music (e.g., thumbs up/down, 1–5 stars).
 - [ ] Store categorization history, subgenre confirmations, and user feedback in the database.
-- [ ] Implement Reinforcement Learning with Human Feedback (RLHF) to feed user subgenre selections back into the model.
-- [ ] Apply Reinforcement Learning with Verifiable Rewards (RLVR) to continuously improve the reasoning component's accuracy.
 - [ ] Build a personal taste profile from accumulated ratings and categorizations.
 
 ## Phase 7: Recommendation Engine
