@@ -1,0 +1,212 @@
+{
+  "version": "1.0",
+  "classes": [
+    "techno",
+    "house",
+    "trance",
+    "drum and bass",
+    "dubstep",
+    "ambient",
+    "electro",
+    "minimal",
+    "progressive house",
+    "deep house",
+    "tech house",
+    "melodic techno",
+    "hardcore",
+    "gabber",
+    "breakbeat",
+    "jungle",
+    "garage",
+    "acid",
+    "industrial",
+    "synthwave"
+  ],
+  "tag_map": {
+    "techno": [
+      "techno",
+      "techno music",
+      "technomusic",
+      "berlin techno",
+      "hard techno",
+      "dark techno",
+      "industrial techno",
+      "dj techno"
+    ],
+    "house": [
+      "house",
+      "house music",
+      "housemusic",
+      "chicago house",
+      "funky house",
+      "tribal house",
+      "vocal house",
+      "soulful house",
+      "afro house",
+      "electro house",
+      "electrohouse"
+    ],
+    "trance": [
+      "trance",
+      "trance music",
+      "trancemusic",
+      "uplifting trance",
+      "epic trance",
+      "eurotrance",
+      "psy trance",
+      "psytrance",
+      "psychedelic trance",
+      "goa trance"
+    ],
+    "drum and bass": [
+      "drum and bass",
+      "drum&bass",
+      "dnb",
+      "d&b",
+      "drumfunk",
+      "neurofunk",
+      "liquid drum and bass",
+      "liquid dnb",
+      "jump up",
+      "rollers"
+    ],
+    "dubstep": [
+      "dubstep",
+      "dub step",
+      "brostep",
+      "melodic dubstep",
+      "future bass",
+      "futurebass"
+    ],
+    "ambient": [
+      "ambient",
+      "ambient music",
+      "ambientmusic",
+      "ambient electronic",
+      "dark ambient",
+      "drone",
+      "space ambient",
+      "ambient techno",
+      "chill",
+      "chillout"
+    ],
+    "electro": [
+      "electro",
+      "electro funk",
+      "electrobeat",
+      "miami bass",
+      "electro bass",
+      "electro hip hop"
+    ],
+    "minimal": [
+      "minimal",
+      "minimal techno",
+      "minimal house",
+      "minimal electronic",
+      "microhouse",
+      "micro house",
+      "clicks and cuts"
+    ],
+    "progressive house": [
+      "progressive house",
+      "progressive",
+      "progressivehouse",
+      "progressive trance",
+      "progressive electro"
+    ],
+    "deep house": [
+      "deep house",
+      "deephouse",
+      "deep tech",
+      "organic house",
+      "lo-fi house"
+    ],
+    "tech house": [
+      "tech house",
+      "techhouse",
+      "tech-house"
+    ],
+    "melodic techno": [
+      "melodic techno",
+      "melodic techno house",
+      "melodic house",
+      "melodic house and techno",
+      "organic techno",
+      "hypnotic techno"
+    ],
+    "hardcore": [
+      "hardcore",
+      "hardcore techno",
+      "happy hardcore",
+      "terror",
+      "speedcore",
+      "hardstyle"
+    ],
+    "gabber": [
+      "gabber",
+      "gabba",
+      "early hardcore",
+      "rotterdam techno"
+    ],
+    "breakbeat": [
+      "breakbeat",
+      "break beat",
+      "breaks",
+      "breakbeats",
+      "nu skool breaks",
+      "electro breaks",
+      "florida breaks",
+      "progressive breaks"
+    ],
+    "jungle": [
+      "jungle",
+      "jungle music",
+      "raggajungle",
+      "ragga jungle",
+      "darkcore",
+      "rave music"
+    ],
+    "garage": [
+      "garage",
+      "uk garage",
+      "ukgarage",
+      "2-step",
+      "2step",
+      "speed garage",
+      "bassline",
+      "future garage"
+    ],
+    "acid": [
+      "acid",
+      "acid house",
+      "acid techno",
+      "acid trance",
+      "acid music",
+      "303",
+      "acidic"
+    ],
+    "industrial": [
+      "industrial",
+      "industrial music",
+      "industrial electronic",
+      "ebm",
+      "electronic body music",
+      "power electronics",
+      "noise",
+      "aggrotech"
+    ],
+    "synthwave": [
+      "synthwave",
+      "synth wave",
+      "retrowave",
+      "retro wave",
+      "outrun",
+      "outrun music",
+      "vaporwave",
+      "vapor wave",
+      "darksynth",
+      "dark synth",
+      "chillwave"
+    ]
+  }
+}
