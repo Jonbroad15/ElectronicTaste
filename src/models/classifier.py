@@ -7,11 +7,14 @@ The model always returns **exactly 3** top-k predictions (FR-3 / FR-5).
 """
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+logger = logging.getLogger(__name__)
 
 TOP_K: int = 3
 
@@ -23,12 +26,20 @@ class SubgenreClassifier(nn.Module):
     this module's parameters are updated during fine-tuning.
 
     Args:
-        num_classes: Number of output classes.
+        num_classes: Number of output classes.  Must be ≥ TOP_K (3).
         embed_dim:   Dimensionality of the input embedding (default 768).
+
+    Raises:
+        ValueError: if ``num_classes < TOP_K``.
     """
 
     def __init__(self, num_classes: int, embed_dim: int = 768) -> None:
         super().__init__()
+        if num_classes < TOP_K:
+            raise ValueError(
+                f"num_classes ({num_classes}) must be ≥ TOP_K ({TOP_K}). "
+                "predict_top3 requires at least 3 output classes."
+            )
         self.num_classes = num_classes
         self.embed_dim = embed_dim
         self.head = nn.Sequential(
@@ -90,11 +101,16 @@ class SubgenreClassifier(nn.Module):
         ]
 
     # ------------------------------------------------------------------
-    # Persistence
+    # Persistence — inference checkpoint (weights only)
     # ------------------------------------------------------------------
 
     def save(self, path: str | Path) -> None:
-        """Save classifier weights and metadata to a .pt file."""
+        """Save classifier weights and metadata to a .pt file.
+
+        This format is used by :class:`src.api.predict.Predictor` for
+        inference.  Use :func:`save_training_checkpoint` to persist full
+        training state for resumable training.
+        """
         torch.save(
             {
                 "state_dict": self.state_dict(),
@@ -110,16 +126,18 @@ class SubgenreClassifier(nn.Module):
         path: str | Path,
         device: torch.device | str = "cpu",
     ) -> "SubgenreClassifier":
-        """Load a classifier from a .pt checkpoint.
+        """Load a classifier from an inference checkpoint written by :meth:`save`.
 
         Args:
-            path:   Path to the checkpoint written by :meth:`save`.
+            path:   Path to the checkpoint.
             device: Device to map the weights onto.
 
         Returns:
             Classifier in eval mode on ``device``.
         """
-        checkpoint = torch.load(path, map_location=device)
+        # weights_only=True prevents arbitrary code execution via pickle
+        # (safe for checkpoints written by this codebase).
+        checkpoint = torch.load(path, map_location=device, weights_only=True)
         model = cls(
             num_classes=checkpoint["num_classes"],
             embed_dim=checkpoint["embed_dim"],

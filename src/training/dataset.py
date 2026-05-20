@@ -165,9 +165,11 @@ class AudioDataset(Dataset):
     def _cache_key(self, audio_path: Path) -> Path | None:
         if self.cache_dir is None:
             return None
-        # Flatten the path into a single filename
+        # Include preprocessing parameters in the key so that changing
+        # clip_seconds or target_sr invalidates stale cached tensors.
+        param_tag = f"sr{self.target_sr}_clip{self.clip_seconds:.1f}"
         safe = audio_path.as_posix().replace("/", "__").replace(".", "_")
-        return self.cache_dir / f"{safe}.pkl"
+        return self.cache_dir / f"{safe}__{param_tag}.pkl"
 
     def _load_cached(self, path: Path) -> torch.Tensor:
         cache_path = self._cache_key(path)

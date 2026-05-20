@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import sys
 import time
 from pathlib import Path
 
@@ -90,8 +91,12 @@ def main() -> None:
 
     # ── Collect files ─────────────────────────────────────────────
     samples = collect_files(audio_dir)
+    if not samples:
+        print(f"ERROR: no audio files found in {audio_dir}")
+        sys.exit(1)
+
     print(f"Found {len(samples)} audio files in {audio_dir}\n")
-    has_ground_truth = samples[0][1] is not None if samples else False
+    has_ground_truth = samples[0][1] is not None
 
     # ── Run inference ─────────────────────────────────────────────
     rows: list[dict] = []
@@ -131,7 +136,7 @@ def main() -> None:
     total_time = time.time() - t_start
 
     # ── Write CSV ─────────────────────────────────────────────────
-    fieldnames = list(rows[0].keys()) if rows else []
+    fieldnames = list(rows[0].keys())
     with open(output_path, "w", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=fieldnames)
         writer.writeheader()

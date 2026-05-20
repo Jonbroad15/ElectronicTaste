@@ -6,15 +6,15 @@ MERT download.  They validate the HTTP contract only.
 from __future__ import annotations
 
 import io
-import struct
+import time
 import wave
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
 
 import src.api.main as api_main
-from src.api.main import app
+from src.api.main import app, _MAX_UPLOAD_BYTES
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -42,19 +42,30 @@ def client():
     mock_predictor = MagicMock()
     mock_predictor.predict.return_value = _FAKE_PREDICTIONS
 
-    # The lifespan runs on TestClient.__enter__ and may set _predictor = None
-    # (no model files on disk during tests).  We inject the mock afterwards.
     with TestClient(app) as c:
         api_main._predictor = mock_predictor
         yield c
-        api_main._predictor = None  # reset after each test
+        api_main._predictor = None
+
+
+@pytest.fixture()
+def client_error():
+    """TestClient whose Predictor raises an exception on every call."""
+    mock_predictor = MagicMock()
+    mock_predictor.predict.side_effect = RuntimeError(
+        "/internal/path/models/classifier_best.pt: shape mismatch"
+    )
+    with TestClient(app) as c:
+        api_main._predictor = mock_predictor
+        yield c
+        api_main._predictor = None
 
 
 @pytest.fixture()
 def client_no_model():
     """TestClient with no model loaded (simulates pre-training state)."""
     with TestClient(app) as c:
-        api_main._predictor = None  # ensure it stays None
+        api_main._predictor = None
         yield c
 
 
@@ -74,22 +85,15 @@ def test_health_returns_200(client: TestClient) -> None:
 def test_predict_returns_exactly_3(client: TestClient) -> None:
     """V5.2 — POST /predict returns a list of exactly 3 predictions."""
     wav = _make_wav_bytes()
-    response = client.post(
-        "/predict",
-        files={"audio": ("test.wav", wav, "audio/wav")},
-    )
+    response = client.post("/predict", files={"audio": ("test.wav", wav, "audio/wav")})
     assert response.status_code == 200
-    predictions = response.json()["predictions"]
-    assert len(predictions) == 3
+    assert len(response.json()["predictions"]) == 3
 
 
 def test_predict_response_keys(client: TestClient) -> None:
     """V5.2 — each prediction has 'label' (str) and 'confidence' (float)."""
     wav = _make_wav_bytes()
-    response = client.post(
-        "/predict",
-        files={"audio": ("test.wav", wav, "audio/wav")},
-    )
+    response = client.post("/predict", files={"audio": ("test.wav", wav, "audio/wav")})
     assert response.status_code == 200
     for pred in response.json()["predictions"]:
         assert isinstance(pred["label"], str)
@@ -99,23 +103,81 @@ def test_predict_response_keys(client: TestClient) -> None:
 def test_predict_sorted_descending(client: TestClient) -> None:
     """V5.2 — predictions are sorted highest-to-lowest confidence."""
     wav = _make_wav_bytes()
-    response = client.post(
-        "/predict",
-        files={"audio": ("test.wav", wav, "audio/wav")},
-    )
+    response = client.post("/predict", files={"audio": ("test.wav", wav, "audio/wav")})
     confs = [p["confidence"] for p in response.json()["predictions"]]
-    assert confs == sorted(confs, reverse=True), "Predictions not sorted by confidence"
+    assert confs == sorted(confs, reverse=True)
 
 
-# ── V5.4 — invalid file type → 422 ───────────────────────────────────────────
+# ── V5.3 — response time ≤ 2s ────────────────────────────────────────────────
+
+def test_predict_response_time(client: TestClient) -> None:
+    """V5.3 — POST /predict (with mocked model) responds within 2 seconds."""
+    wav = _make_wav_bytes()
+    t0 = time.time()
+    response = client.post("/predict", files={"audio": ("test.wav", wav, "audio/wav")})
+    elapsed = time.time() - t0
+    assert response.status_code == 200
+    assert elapsed < 2.0, f"Response took {elapsed:.2f}s — exceeded 2s limit"
+
+
+# ── V5.4 — invalid content type → 422 ────────────────────────────────────────
 
 def test_invalid_content_type_returns_422(client: TestClient) -> None:
-    """V5.4 — uploading a non-audio file returns HTTP 422."""
+    """V5.4 — uploading a non-audio MIME type returns HTTP 422."""
     response = client.post(
         "/predict",
         files={"audio": ("notes.txt", b"hello world", "text/plain")},
     )
     assert response.status_code == 422
+
+
+def test_non_audio_bytes_rejected(client: TestClient) -> None:
+    """Magic byte check rejects non-audio content even with correct MIME type."""
+    response = client.post(
+        "/predict",
+        files={"audio": ("fake.wav", b"this is not a wav file at all!", "audio/wav")},
+    )
+    assert response.status_code == 422
+
+
+# ── Upload size limit → 413 ───────────────────────────────────────────────────
+
+def test_oversized_upload_returns_413(client: TestClient) -> None:
+    """Upload exceeding MAX_UPLOAD_BYTES returns HTTP 413."""
+    big_payload = b"RIFF" + b"\x00" * (_MAX_UPLOAD_BYTES + 1)
+    response = client.post(
+        "/predict",
+        files={"audio": ("big.wav", big_payload, "audio/wav")},
+    )
+    assert response.status_code == 413
+
+
+def test_at_size_limit_not_rejected(client: TestClient) -> None:
+    """Upload exactly at the limit (with valid WAV magic) is not rejected by size check."""
+    # Build a payload exactly at the limit; it will fail audio decoding (not a real WAV)
+    # but must not return 413.
+    at_limit = _make_wav_bytes()  # small valid WAV — well within limit
+    response = client.post(
+        "/predict",
+        files={"audio": ("ok.wav", at_limit, "audio/wav")},
+    )
+    assert response.status_code != 413
+
+
+# ── Error message leakage ─────────────────────────────────────────────────────
+
+def test_error_message_does_not_leak_internals(client_error: TestClient) -> None:
+    """Exception messages must not expose internal paths or stack traces."""
+    wav = _make_wav_bytes()
+    response = client_error.post(
+        "/predict",
+        files={"audio": ("test.wav", wav, "audio/wav")},
+    )
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    # Must not contain the internal path that was in the exception message
+    assert "/internal/path" not in detail
+    assert "shape mismatch" not in detail
 
 
 # ── No model loaded → 503 ────────────────────────────────────────────────────

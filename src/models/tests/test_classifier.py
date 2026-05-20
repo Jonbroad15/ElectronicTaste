@@ -1,6 +1,8 @@
 """Unit tests for SubgenreClassifier (V3 in validation.md)."""
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 import torch
 import torch.nn.functional as F
@@ -36,7 +38,7 @@ def test_output_shape(model: SubgenreClassifier) -> None:
 
 # ── V3.2 — checkpoint round-trip ─────────────────────────────────────────────
 
-def test_checkpoint_roundtrip(model: SubgenreClassifier, tmp_path: torch.types._dtype) -> None:
+def test_checkpoint_roundtrip(model: SubgenreClassifier, tmp_path: Path) -> None:
     """V3.2 — save then load produces identical weights."""
     path = tmp_path / "clf.pt"
     model.save(path)
@@ -63,17 +65,28 @@ def test_softmax_sums_to_one(model: SubgenreClassifier) -> None:
 # ── V3.4 — frozen MERT grads ─────────────────────────────────────────────────
 
 def test_mert_grads_none_during_head_backward(model: SubgenreClassifier) -> None:
-    """V3.4 — gradients flow only through the classification head, not MERT.
-
-    We verify this by running a backward pass on the classifier alone and
-    confirming all head parameters receive gradients.
-    """
+    """V3.4 — gradients flow through the head; all head params receive grad."""
     x = torch.randn(BATCH, EMBED_DIM, requires_grad=False)
     logits = model(x)
     loss = logits.sum()
     loss.backward()
     for name, param in model.named_parameters():
         assert param.grad is not None, f"Parameter {name} has no gradient"
+
+
+# ── C-1: num_classes < TOP_K guard ───────────────────────────────────────────
+
+def test_num_classes_too_small_raises() -> None:
+    """C-1 — constructing with num_classes < TOP_K raises ValueError."""
+    with pytest.raises(ValueError, match="num_classes"):
+        SubgenreClassifier(num_classes=2)
+
+
+def test_num_classes_exactly_top_k_ok() -> None:
+    """Edge case — num_classes == TOP_K (3) is the minimum valid value."""
+    model = SubgenreClassifier(num_classes=TOP_K)
+    x = torch.randn(1, 768)
+    assert model(x).shape == (1, TOP_K)
 
 
 # ── predict_top3 — always 3 results ──────────────────────────────────────────

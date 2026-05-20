@@ -5,6 +5,8 @@ and peak-normalised to [-1, 1] before being handed to the MERT encoder.
 """
 from __future__ import annotations
 
+import io
+
 import torch
 import torchaudio
 import torchaudio.transforms as T
@@ -95,7 +97,6 @@ def preprocess_bytes(
     Returns:
         1-D float32 tensor of shape ``(target_sr * clip_seconds,)``.
     """
-    import io
     buffer = io.BytesIO(audio_bytes)
     waveform, sr = torchaudio.load(buffer)
     return preprocess_tensor(waveform, sr, target_sr=target_sr, clip_seconds=clip_seconds)
