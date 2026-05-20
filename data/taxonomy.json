@@ -1,212 +1,93 @@
 {
-  "version": "1.0",
+  "version": "1.1",
+  "_note": "10-class taxonomy scoped to MTG-Jamendo raw_30s_cleantags_50artists tags. Each tag_map entry lists bare tag strings AFTER stripping the 'category---' prefix that MTG-Jamendo uses (e.g. 'genre---techno' -> 'techno').",
   "classes": [
-    "techno",
-    "house",
-    "trance",
+    "ambient",
+    "breakbeat",
+    "deep house",
     "drum and bass",
     "dubstep",
-    "ambient",
-    "electro",
-    "minimal",
-    "progressive house",
-    "deep house",
-    "tech house",
-    "melodic techno",
-    "hardcore",
-    "gabber",
-    "breakbeat",
-    "jungle",
-    "garage",
-    "acid",
+    "house",
     "industrial",
-    "synthwave"
+    "minimal",
+    "techno",
+    "trance"
   ],
   "tag_map": {
-    "techno": [
-      "techno",
-      "techno music",
-      "technomusic",
-      "berlin techno",
-      "hard techno",
-      "dark techno",
-      "industrial techno",
-      "dj techno"
-    ],
-    "house": [
-      "house",
-      "house music",
-      "housemusic",
-      "chicago house",
-      "funky house",
-      "tribal house",
-      "vocal house",
-      "soulful house",
-      "afro house",
-      "electro house",
-      "electrohouse"
-    ],
-    "trance": [
-      "trance",
-      "trance music",
-      "trancemusic",
-      "uplifting trance",
-      "epic trance",
-      "eurotrance",
-      "psy trance",
-      "psytrance",
-      "psychedelic trance",
-      "goa trance"
-    ],
-    "drum and bass": [
-      "drum and bass",
-      "drum&bass",
-      "dnb",
-      "d&b",
-      "drumfunk",
-      "neurofunk",
-      "liquid drum and bass",
-      "liquid dnb",
-      "jump up",
-      "rollers"
-    ],
-    "dubstep": [
-      "dubstep",
-      "dub step",
-      "brostep",
-      "melodic dubstep",
-      "future bass",
-      "futurebass"
-    ],
     "ambient": [
       "ambient",
-      "ambient music",
-      "ambientmusic",
-      "ambient electronic",
+      "darkambient",
       "dark ambient",
-      "drone",
+      "chillout",
       "space ambient",
-      "ambient techno",
-      "chill",
-      "chillout"
-    ],
-    "electro": [
-      "electro",
-      "electro funk",
-      "electrobeat",
-      "miami bass",
-      "electro bass",
-      "electro hip hop"
-    ],
-    "minimal": [
-      "minimal",
-      "minimal techno",
-      "minimal house",
-      "minimal electronic",
-      "microhouse",
-      "micro house",
-      "clicks and cuts"
-    ],
-    "progressive house": [
-      "progressive house",
-      "progressive",
-      "progressivehouse",
-      "progressive trance",
-      "progressive electro"
-    ],
-    "deep house": [
-      "deep house",
-      "deephouse",
-      "deep tech",
-      "organic house",
-      "lo-fi house"
-    ],
-    "tech house": [
-      "tech house",
-      "techhouse",
-      "tech-house"
-    ],
-    "melodic techno": [
-      "melodic techno",
-      "melodic techno house",
-      "melodic house",
-      "melodic house and techno",
-      "organic techno",
-      "hypnotic techno"
-    ],
-    "hardcore": [
-      "hardcore",
-      "hardcore techno",
-      "happy hardcore",
-      "terror",
-      "speedcore",
-      "hardstyle"
-    ],
-    "gabber": [
-      "gabber",
-      "gabba",
-      "early hardcore",
-      "rotterdam techno"
+      "drone ambient"
     ],
     "breakbeat": [
       "breakbeat",
       "break beat",
       "breaks",
       "breakbeats",
-      "nu skool breaks",
       "electro breaks",
-      "florida breaks",
       "progressive breaks"
     ],
-    "jungle": [
-      "jungle",
-      "jungle music",
-      "raggajungle",
-      "ragga jungle",
-      "darkcore",
-      "rave music"
+    "deep house": [
+      "deephouse",
+      "deep house",
+      "deep tech",
+      "organic house"
     ],
-    "garage": [
-      "garage",
-      "uk garage",
-      "ukgarage",
-      "2-step",
-      "2step",
-      "speed garage",
-      "bassline",
-      "future garage"
+    "drum and bass": [
+      "drumnbass",
+      "drum and bass",
+      "drum&bass",
+      "dnb",
+      "d&b",
+      "neurofunk",
+      "liquid dnb"
     ],
-    "acid": [
-      "acid",
-      "acid house",
-      "acid techno",
-      "acid trance",
-      "acid music",
-      "303",
-      "acidic"
+    "dubstep": [
+      "dubstep",
+      "dub step",
+      "brostep",
+      "melodic dubstep"
+    ],
+    "house": [
+      "house",
+      "house music",
+      "chicago house",
+      "funky house",
+      "vocal house",
+      "soulful house",
+      "afro house"
     ],
     "industrial": [
       "industrial",
       "industrial music",
       "industrial electronic",
       "ebm",
-      "electronic body music",
-      "power electronics",
-      "noise",
-      "aggrotech"
+      "power electronics"
     ],
-    "synthwave": [
-      "synthwave",
-      "synth wave",
-      "retrowave",
-      "retro wave",
-      "outrun",
-      "outrun music",
-      "vaporwave",
-      "vapor wave",
-      "darksynth",
-      "dark synth",
-      "chillwave"
+    "minimal": [
+      "minimal",
+      "minimal techno",
+      "minimal house",
+      "microhouse",
+      "micro house"
+    ],
+    "techno": [
+      "techno",
+      "berlin techno",
+      "hard techno",
+      "dark techno"
+    ],
+    "trance": [
+      "trance",
+      "trance music",
+      "uplifting trance",
+      "eurotrance",
+      "psytrance",
+      "psy trance",
+      "goa trance"
     ]
   }
 }

@@ -74,8 +74,16 @@ DEFAULT_AUDIO_DIR = Path("data/mtg_jamendo")
 # ── Tag normalisation ─────────────────────────────────────────────────────────
 
 def _normalise(tag: str) -> str:
-    """Lowercase, strip, collapse internal whitespace."""
-    return " ".join(tag.lower().strip().split())
+    """Lowercase, strip category prefix, collapse internal whitespace.
+
+    MTG-Jamendo tags use a ``category---value`` format, e.g. ``genre---techno``.
+    We strip everything up to and including ``---`` before looking up in the
+    taxonomy, so the tag_map can use plain human-readable strings.
+    """
+    tag = tag.lower().strip()
+    if "---" in tag:
+        tag = tag.split("---", 1)[1]
+    return " ".join(tag.split())
 
 
 def build_tag_lookup(taxonomy: dict) -> Dict[str, str]:
@@ -103,8 +111,17 @@ def parse_tsv_row(
 ) -> Optional[Tuple[str, str, str, str]]:
     """Extract relevant fields from a single TSV row.
 
+    MTG-Jamendo TSV layout
+    ----------------------
+    The first 5 fixed columns are TRACK_ID, ARTIST_ID, ALBUM_ID, PATH, DURATION.
+    All remaining columns are tag strings (one tag per column, variable count).
+    The header only declares 6 columns (the 6th being "TAGS") but rows routinely
+    have 7–15 columns when a track has multiple tags.  We therefore read the
+    first 5 fixed fields and treat everything from index 5 onward as tags.
+
     Args:
-        header:     Column names from the TSV header row.
+        header:     Column names from the TSV header row (used only to locate
+                    the TRACK_ID column index).
         row:        Field values for one track.
         tag_lookup: Normalised tag → canonical class mapping.
 
@@ -112,35 +129,21 @@ def parse_tsv_row(
         ``(track_id, audio_url, canonical_label, raw_tags_str)`` or ``None``
         if the track has no matching subgenre tag.
     """
-    if len(row) != len(header):
+    if len(row) < 6:
         return None
 
-    row_dict = dict(zip(header, row))
+    # Fixed columns by position (more robust than dict lookup given variable width)
+    track_id = row[0].strip()
+    # Tags start at column 5; every column from 5 onward is one tag string.
+    tag_columns = [c.strip() for c in row[5:] if c.strip()]
 
-    # The TSV uses TRACK_ID (integer) and TAGS (tab or space-separated)
-    # Column names differ between versions; handle both.
-    track_id = (
-        row_dict.get("TRACK_ID")
-        or row_dict.get("track_id")
-        or row_dict.get("id")
-        or ""
-    ).strip()
-
-    raw_tags_field = (
-        row_dict.get("TAGS")
-        or row_dict.get("tags")
-        or row_dict.get("genre")
-        or ""
-    ).strip()
-
-    if not track_id or not raw_tags_field:
+    if not track_id or not tag_columns:
         return None
 
-    # Tags are comma-separated in the raw_30s file
-    raw_tags = [_normalise(t) for t in raw_tags_field.replace(",", " ").split()]
+    raw_tags = [_normalise(t) for t in tag_columns]
 
-    # Determine canonical label: first tag that hits the lookup wins
-    # (gives priority to more specific tags listed earlier in the taxonomy)
+    # Determine canonical label: first tag that hits the lookup wins.
+    # Iterating in column order preserves MTG-Jamendo's tag priority.
     canonical = None
     matched_tags: List[str] = []
 
