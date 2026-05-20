@@ -171,12 +171,14 @@ def print_report(metrics: dict) -> None:
         print(f"    {pair}: {count}")
 
     t = metrics["timing"]
+    projected_200 = t["mean_s"] * 200
     print(f"\n  Inference timing:")
-    print(f"    Mean   : {t['mean_s']:.3f}s  (threshold ≤ {NFR_MAX_INFERENCE_S}s)")
-    print(f"    Stdev  : {t['stdev_s']:.3f}s")
-    print(f"    Min    : {t['min_s']:.3f}s")
-    print(f"    Max    : {t['max_s']:.3f}s")
-    print(f"    Total  : {t['total_s']:.1f}s")
+    print(f"    Mean        : {t['mean_s']:.3f}s  (threshold ≤ {NFR_MAX_INFERENCE_S}s)")
+    print(f"    Stdev       : {t['stdev_s']:.3f}s")
+    print(f"    Min         : {t['min_s']:.3f}s")
+    print(f"    Max         : {t['max_s']:.3f}s")
+    print(f"    Total       : {t['total_s']:.1f}s  ({metrics['num_files']} files)")
+    print(f"    Proj. 200   : {projected_200:.1f}s  (threshold ≤ {NFR_MAX_BATCH_200_S}s)")
 
 
 def check_nfr(metrics: dict) -> list[str]:
@@ -206,12 +208,15 @@ def check_nfr(metrics: dict) -> list[str]:
             f"Mean inference time {mean_t:.3f}s > {NFR_MAX_INFERENCE_S}s"
         )
 
-    if metrics["num_files"] >= 200:
-        total_t = metrics["timing"]["total_s"]
-        if total_t > NFR_MAX_BATCH_200_S:
-            failures.append(
-                f"200-file batch time {total_t:.1f}s > {NFR_MAX_BATCH_200_S}s"
-            )
+    # Project the time for exactly 200 files using the measured mean per-file time.
+    # (We may have run over more or fewer than 200 files, so we project rather
+    # than using total_s directly.)
+    projected_200 = metrics["timing"]["mean_s"] * 200
+    if projected_200 > NFR_MAX_BATCH_200_S:
+        failures.append(
+            f"Projected 200-file batch time {projected_200:.1f}s > {NFR_MAX_BATCH_200_S}s "
+            f"(mean {metrics['timing']['mean_s']:.3f}s × 200)"
+        )
 
     return failures
 
