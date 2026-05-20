@@ -9,3 +9,12 @@ data/*.csv
 data/*.zip
 data/gtzan_audio/
 data/kaggle-edm-data/
+data/mtg_jamendo/
+data/embedding_cache/
+
+# Phase 3 generated artefacts
+models/checkpoints/
+models/*.pt
+models/label_encoder.json
+training_log.csv
+results/

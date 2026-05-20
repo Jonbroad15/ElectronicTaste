@@ -1,0 +1,26 @@
+# Core ML
+torch>=2.2
+torchaudio>=2.2
+transformers>=4.40
+
+# API
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9   # FastAPI file uploads
+
+# Audio / data
+librosa>=0.10          # BPM detection, augmentation experiments
+soundfile>=0.12
+
+# Training utilities
+scikit-learn>=1.4      # metrics, label encoding helpers
+numpy>=1.24
+matplotlib>=3.8        # confusion matrix plots
+
+# Testing
+pytest>=8.0
+httpx>=0.27            # FastAPI TestClient dependency
+psutil>=5.9            # memory monitoring in benchmark
+
+# Type checking (optional, for mypy)
+# mypy>=1.9
