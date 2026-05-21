@@ -9,3 +9,4 @@ data/*.csv
 data/*.zip
 data/gtzan_audio/
 data/kaggle-edm-data/
+models/
