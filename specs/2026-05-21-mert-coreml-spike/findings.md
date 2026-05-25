@@ -6,11 +6,14 @@
 
 ---
 
-## Recommendation: **GO for iOS (on-device). CONDITIONAL for Android.**
+## Recommendation: **GO for on-device on both iOS and Android. Defer Phase 4 cloud GPU.**
 
-Phase 4 cloud infrastructure **can be deferred** for iOS. MERT-v1-95M converts cleanly to CoreML, passes accuracy parity at both FP16 and INT8, and at 95 MB (INT8) fits comfortably within App Store limits. The on-device path also eliminates the connectivity problem — clubs and festivals have poor cell signal, which is exactly when users need the app.
+Phase 4 cloud infrastructure **can be deferred**. MERT-v1-95M runs on-device within budget on both platforms:
 
-Android is viable in principle (ORT FP32 works) but requires one additional step before it can be declared production-ready: the INT8 ORT model uses a `ConvInteger` op not yet supported by the ORT CPU provider on the desktop test host. This must be validated on a physical Android device against the ORT Android runtime before the cloud fallback can be dropped.
+- **iOS**: Converts cleanly to CoreML FP16 (189 MB) and INT8 (95 MB). Parity confirmed. On-device benchmark pending physical iPhone test, but macOS CoreML CPU path at 1.1s strongly indicates sub-10s on Neural Engine.
+- **Android**: Confirmed **7.3 seconds** for a 30-second clip on a Pixel 10 Pro XL (ORT CPU, FP32). Well within the 20-second budget. Tested on physical hardware. ✅
+
+The on-device path also eliminates the connectivity problem — clubs and festivals have poor cell signal, which is exactly when users need the app. Cloud infra should be retained only for model retraining and RLHF (Phase 6 onwards).
 
 ---
 
@@ -36,7 +39,7 @@ Android is viable in principle (ORT FP32 works) but requires one additional step
 | Variant | Cosine Sim | Threshold | Pass? |
 |---|---|---|---|
 | ONNX FP32 | **1.0000** | ≥ 0.99 | ✅ PASS |
-| ONNX INT8 | — | ≥ 0.97 | ⚠ Not tested (see caveat below) |
+| ONNX INT8 | — | ≥ 0.97 | ❌ Not testable — ConvInteger op unsupported (see below) |
 | CoreML FP16 | **0.9997** | ≥ 0.99 | ✅ PASS |
 | CoreML INT8 | **0.9988** | ≥ 0.97 | ✅ PASS |
 
@@ -44,9 +47,20 @@ CoreML INT8 (0.9988) exceeds the FP16 threshold (0.99) — acceptable; use FP16 
 
 ---
 
-## Latency Benchmarks (macOS Apple Silicon — proxy for on-device)
+## Latency Benchmarks
 
-These times are measured on the conversion host (Apple Silicon Mac via CPU, no Neural Engine), **not** on a physical mobile device. They represent an upper bound — on-device Neural Engine execution will be substantially faster.
+### Android — Physical Device (Pixel 10 Pro XL, Android 16, arm64-v8a)
+
+| Variant | Latency (30s clip) | Backend | Status |
+|---|---|---|---|
+| ONNX FP32 | **7280ms** (σ≈100ms, n=3) | ORT CPU | ✅ Confirmed |
+| ONNX INT8 | — | ORT CPU / NNAPI | ❌ ConvInteger unsupported |
+
+**7.3 seconds for a 30-second clip on Pixel CPU is well within the 20-second budget.** NNAPI was also tried and hangs — the CPU provider is the correct Android path for this model.
+
+### macOS Apple Silicon — Conversion Host (proxy only)
+
+These are on the Mac CPU, not on-device, and are included for reference only.
 
 | Variant | Latency (30s clip) | Notes |
 |---|---|---|
@@ -85,7 +99,12 @@ CoreML FP16 is the fastest converted variant at 1.1s on the Mac CPU path. The Ne
 ## Outstanding Tasks Before Production
 
 - [ ] Benchmark CoreML FP16/INT8 on physical iPhone (12 and 14+) via a minimal Swift test harness using Instruments.
-- [ ] Validate ORT INT8 ONNX on physical Android device (Galaxy S23 + Pixel 6a) — specifically confirm `ConvInteger` is supported by the ORT Android AAR.
+- [ ] Re-quantize Android model using `quantize_static` (with calibration data) or ORT's `QLinearConv`-based scheme to replace the non-working `ConvInteger` INT8 path — target <50 MB on-device footprint.
 - [ ] Re-export CoreML with `ct.RangeDim` input if variable clip lengths are needed.
-- [ ] Integrate CoreML model into Phase 5 mobile app (replace placeholder API call with on-device `MLModel.prediction()`).
-- [ ] If Android ORT INT8 is confirmed working: remove Phase 4 cloud GPU provisioning from scope. Retain cloud infra only for model retraining / RLHF (Phase 6).
+- [ ] Integrate CoreML model into Phase 5 iOS app; integrate ORT FP32 ONNX into Phase 5 Android app.
+- [ ] Remove Phase 4 cloud GPU provisioning from scope. Retain cloud infra planning only for model retraining / RLHF (Phase 6).
+
+## Closed
+
+- [x] Validate ORT FP32 ONNX on physical Android device — **confirmed 7.3s on Pixel 10 Pro XL** (2026-05-24)
+- [x] Confirm `ConvInteger` INT8 status on Android — **not supported** by ORT CPU or NNAPI on Android 16; alternative quantization approach required.
