@@ -2,6 +2,15 @@
 
 All notable changes to the Electronic Taste project will be documented in this file.
 
+## [Phase 3] - 2026-06-06
+
+### Added
+- **MERT On-Device Spike Findings**: Completed on-device spike for local MERT model execution. Successfully converted models to CoreML FP16 (189 MB) and INT8 (95 MB) for iOS, and ONNX FP32 (361 MB) for Android, achieving 7.3s latency on Pixel 10 Pro XL.
+
+### Changed
+- **`specs/tech.md`**: Updated the tech stack to specify on-device MERT inference (CoreML for iOS and ONNX Runtime for Android) instead of server-side GPU hosting. Redefined the cloud backend as a lightweight CPU-only instance for synchronization, user profiles, and RLHF feedback. Documented GPU hardware requirements for Phase 4 offline model pre-training/fine-tuning.
+- **`specs/roadmap.md`**: Restored MAM pre-training and fine-tuning on the Raveform dataset as Phase 4 (pre-MVP). Re-ordered subsequent phases to place on-device conversion/integration at Phase 5, and mobile/backend MVP development at Phase 6.
+
 ## [Phase 2] - 2026-05-19
 
 ### Added

@@ -17,6 +17,7 @@
 - [x] Integrate the zero-shot MERT model to predict electronic music subgenres directly from raw audio.
 - [x] Validate the zero-shot model's accuracy on a test dataset, targeting at least 70% accuracy.
 - [x] Benchmark inference speed to ensure it's viable for near-real-time predictions.
+- [x] Conduct on-device MERT CoreML & ONNX spike (confirmed 95MB INT8 CoreML for iOS, 7.3s FP32 ONNX on Android Pixel 10 Pro XL).
 
 ## Phase 4: MAM Pre-training & Raveform Dataset
 - [ ] Provision the GCP CPU download VM (`electronic-taste-download`) and mount the 2 TB persistent data disk.
@@ -26,32 +27,34 @@
 - [ ] Fine-tune the classification head on the pre-trained MAM encoder using the 10 target EDM subgenres.
 - [ ] Validate the fine-tuned model's accuracy on the EDM test set, targeting at least 55% accuracy.
 
-## Phase 5: Cloud Infrastructure & Model Deployment
-- [ ] Research and evaluate cloud providers (AWS, GCP, RunPod, etc.) to determine the most cost-effective solution for our usecase.
-- [ ] Provision scalable cloud instances/GPUs for hosting the chosen reasoning models (e.g., Qwen) and prediction API.
-- [ ] Deploy the core audio processing pipeline and ML models to the cloud environment.
-- [ ] Establish a secure connection endpoint for the upcoming mobile application.
+## Phase 5: On-Device Model Conversion & Integration
+- [ ] Convert the newly fine-tuned EDM MERT model to CoreML (iOS) and ONNX (Android) formats.
+- [ ] Benchmark CoreML FP16/INT8 on physical iPhone (12 and 14+) via a minimal Swift test harness.
+- [ ] Re-quantize Android ONNX model using `quantize_static` (QLinearConv) to replace the unsupported dynamic `ConvInteger` path.
+- [ ] Re-export CoreML with `ct.RangeDim` dynamic shape if variable clip lengths are required (defaulting to 30s MVP).
+- [ ] Embed the MERT CoreML model into the iOS codebase.
+- [ ] Embed the MERT ONNX model into the Android codebase.
 
-## Phase 6: Mobile App Foundation (MVP)
-- [ ] Initialize the mobile application project (React Native / Flutter).
-- [ ] Implement microphone permissions and audio recording functionality.
-- [ ] Create a simple user interface to trigger recording and display the predicted subgenre.
-- [ ] Connect the mobile app to the cloud-hosted prediction API.
+## Phase 6: Mobile MVP & Lightweight Backend
+- [ ] Initialize mobile application project (React Native or Flutter).
+- [ ] Implement microphone permissions, audio capture, and native 24kHz mono resampling/preprocessing on-device.
+- [ ] Create a simple user interface to trigger recording and run on-device subgenre prediction.
+- [ ] Deploy a lightweight, cost-effective cloud backend (FastAPI + SQLite/PostgreSQL) on a CPU-only instance (GCP/AWS/Fly.io/Supabase) to support user sync and metadata. (Note: Cloud GPU prediction API deferred to post-MVP).
+- [ ] Build API endpoints for syncing user profiles, categorization history, and feedback.
+- [ ] Implement secure authentication and token management for mobile clients.
 
-## Phase 7: User Feedback & Profiles
-- [ ] Implement user authentication and profiles.
-- [ ] Build a UI to return predicted subgenres to the user and allow them to select the ones they agree with.
-- [ ] Add a rating system allowing users to rate their enjoyment of the identified music (e.g., thumbs up/down, 1–5 stars).
-- [ ] Store categorization history, subgenre confirmations, and user feedback in the database.
-- [ ] Build a personal taste profile from accumulated ratings and categorizations.
+## Phase 7: User Profiles & Feedback Loop (RLHF)
+- [ ] Implement user profiles and authentication in the mobile app.
+- [ ] Design and build UI for displaying predicted subgenres, allowing user corrections/confirmations.
+- [ ] Add rating and feedback controls (e.g. thumbs up/down, 1-5 stars) to build personal taste profiles.
+- [ ] Sync feedback and correction events to the backend database to seed future model retraining.
 
 ## Phase 8: Recommendation Engine
-- [ ] Develop an algorithm to analyze the user's highly-rated subgenres and tracks.
-- [ ] Integrate a recommendation system to suggest new artists and specific electronic music styles.
-- [ ] Build a "Discover" UI in the app to present these recommendations to the user.
+- [ ] Develop a content-based recommendation algorithm leveraging MERT embeddings (matching tracks by embedding distance).
+- [ ] Build a "Discover" UI in the app to present recommended electronic music tracks/artists.
 
 ## Phase 9: Polish and Launch
 - [ ] Refine the UI/UX with a premium, raver-focused aesthetic.
-- [ ] Perform comprehensive beta testing in real-world environments (e.g., clubs, festivals).
-- [ ] Optimize audio capture for noisy environments.
+- [ ] Perform comprehensive beta testing in real-world environments (e.g., clubs, festivals with poor connectivity).
+- [ ] Optimize audio capture for loud, noisy environments.
 - [ ] Launch on iOS App Store and Google Play Store.
