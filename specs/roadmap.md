@@ -20,10 +20,10 @@
 - [x] Conduct on-device MERT CoreML & ONNX spike (confirmed 95MB INT8 CoreML for iOS, 7.3s FP32 ONNX on Android Pixel 10 Pro XL).
 
 ## Phase 4: UI Generation
-- [ ] Design a web interface utilizing a premium dark mode, ambient purple and green glows, and Google-style rounded corner elements.
-- [ ] Implement a file ingestion zone supporting drag-and-drop or manual upload of songs or mixes.
-- [ ] Perform audio loading and metadata decoding using the client-side Web Audio API to retrieve file details and exact duration.
-- [ ] Build a dynamic, interactive analysis result card displaying classification metrics (e.g., predicted subgenre, BPM, key, vocal vs. instrumental ratio, energy level).
+- [x] Design a web interface utilizing a premium dark mode, ambient purple and green glows, and Google-style rounded corner elements.
+- [x] Implement a file ingestion zone supporting drag-and-drop or manual upload of songs or mixes.
+- [x] Perform audio loading and metadata decoding using the client-side Web Audio API to retrieve file details and exact duration.
+- [x] Build a dynamic, interactive analysis result card displaying key classification metrics (predicted subgenre, BPM, key, and gold dot-scale energy levels).
 
 ## Phase 5: MAM Pre-training & Raveform Dataset
 - [ ] Provision the GCP CPU download VM (`electronic-taste-download`) and mount the 2 TB persistent data disk.
