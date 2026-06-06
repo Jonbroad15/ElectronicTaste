@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the Electronic Taste project will be documented in this file.
+All notable changes to the Electric Taste project will be documented in this file.
 
 ## [Phase 2] - 2026-05-19
 

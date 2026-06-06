@@ -18,31 +18,37 @@
 - [ ] Validate the zero-shot model's accuracy on a test dataset, targeting at least 70% accuracy.
 - [ ] Benchmark inference speed to ensure it's viable for near-real-time predictions.
 
-## Phase 4: Cloud Infrastructure & Model Deployment
+## Phase 4: UI Generation
+- [ ] Design a web interface utilizing a premium dark mode, ambient purple and green glows, and Google-style rounded corner elements.
+- [ ] Implement a file ingestion zone supporting drag-and-drop or manual upload of songs or mixes.
+- [ ] Perform audio loading and metadata decoding using the client-side Web Audio API to retrieve file details and exact duration.
+- [ ] Build a dynamic, interactive analysis result card displaying classification metrics (e.g., predicted subgenre, BPM, key, vocal vs. instrumental ratio, energy level).
+
+## Phase 5: Cloud Infrastructure & Model Deployment
 - [ ] Research and evaluate cloud providers (AWS, GCP, RunPod, etc.) to determine the most cost-effective solution for our usecase.
 - [ ] Provision scalable cloud instances/GPUs for hosting the chosen reasoning models (e.g., Qwen) and prediction API.
 - [ ] Deploy the core audio processing pipeline and ML models to the cloud environment.
 - [ ] Establish a secure connection endpoint for the upcoming mobile application.
 
-## Phase 5: Mobile App Foundation (MVP)
+## Phase 6: Mobile App Foundation (MVP)
 - [ ] Initialize the mobile application project (React Native / Flutter).
 - [ ] Implement microphone permissions and audio recording functionality.
 - [ ] Create a simple user interface to trigger recording and display the predicted subgenre.
 - [ ] Connect the mobile app to the cloud-hosted prediction API.
 
-## Phase 6: User Feedback & Profiles
+## Phase 7: User Feedback & Profiles
 - [ ] Implement user authentication and profiles.
 - [ ] Build a UI to return predicted subgenres to the user and allow them to select the ones they agree with.
 - [ ] Add a rating system allowing users to rate their enjoyment of the identified music (e.g., thumbs up/down, 1–5 stars).
 - [ ] Store categorization history, subgenre confirmations, and user feedback in the database.
 - [ ] Build a personal taste profile from accumulated ratings and categorizations.
 
-## Phase 7: Recommendation Engine
+## Phase 8: Recommendation Engine
 - [ ] Develop an algorithm to analyze the user's highly-rated subgenres and tracks.
 - [ ] Integrate a recommendation system to suggest new artists and specific electronic music styles.
 - [ ] Build a "Discover" UI in the app to present these recommendations to the user.
 
-## Phase 8: Polish and Launch
+## Phase 9: Polish and Launch
 - [ ] Refine the UI/UX with a premium, raver-focused aesthetic.
 - [ ] Perform comprehensive beta testing in real-world environments (e.g., clubs, festivals).
 - [ ] Optimize audio capture for noisy environments.

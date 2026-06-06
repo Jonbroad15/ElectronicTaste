@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document defines the finalized technologies and architecture for the Electronic Taste project. Decisions are based on the Phase 2 research findings, including a validated MERT prototype that achieved 64.5% accuracy on 10-genre classification using a frozen encoder on local hardware.
+This document defines the finalized technologies and architecture for the Electric Taste project. Decisions are based on the Phase 2 research findings, including a validated MERT prototype that achieved 64.5% accuracy on 10-genre classification using a frozen encoder on local hardware.
 
 ---
 

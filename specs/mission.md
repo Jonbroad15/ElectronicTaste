@@ -1,8 +1,8 @@
 # Mission
 
-## Electronic Taste
+## Electric Taste
 
-**Electronic Taste** is a mobile application designed for ravers, electronic music enthusiasts, and anyone curious about the vast world of electronic music subgenres.
+**Electric Taste** is a mobile application designed for ravers, electronic music enthusiasts, and anyone curious about the vast world of electronic music subgenres.
 
 ### What We're Building
 
@@ -18,7 +18,7 @@ An app that listens to the music around you — at a club, a festival, or throug
 
 ### Why It Matters
 
-Electronic music has hundreds of subgenres, and navigating that landscape can be overwhelming — even for seasoned ravers. Electronic Taste bridges that gap by helping users discover *what* they're hearing, track their preferences, and find more of what they love.
+Electronic music has hundreds of subgenres, and navigating that landscape can be overwhelming — even for seasoned ravers. Electric Taste bridges that gap by helping users discover *what* they're hearing, track their preferences, and find more of what they love.
 
 ### Core Principles
 
