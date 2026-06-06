@@ -1,7 +1,7 @@
 # Phase 2: Requirements (Research and Feasibility)
 
 ## Objectives
-The primary goal of Phase 2 is to research and evaluate the technical feasibility of the core machine learning and audio processing components of Electronic Taste before committing to a specific architecture.
+The primary goal of Phase 2 is to research and evaluate the technical feasibility of the core machine learning and audio processing components of Electric Taste before committing to a specific architecture.
 
 ## Specific Requirements
 1. **Model Research**: Investigate existing open-source machine learning models for music genre and subgenre classification. 

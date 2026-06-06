@@ -19,7 +19,13 @@
 - [x] Benchmark inference speed to ensure it's viable for near-real-time predictions.
 - [x] Conduct on-device MERT CoreML & ONNX spike (confirmed 95MB INT8 CoreML for iOS, 7.3s FP32 ONNX on Android Pixel 10 Pro XL).
 
-## Phase 4: MAM Pre-training & Raveform Dataset
+## Phase 4: UI Generation
+- [x] Design a web interface utilizing a premium dark mode, ambient purple and green glows, and Google-style rounded corner elements.
+- [x] Implement a file ingestion zone supporting drag-and-drop or manual upload of songs or mixes.
+- [x] Perform audio loading and metadata decoding using the client-side Web Audio API to retrieve file details and exact duration.
+- [x] Build a dynamic, interactive analysis result card displaying key classification metrics (predicted subgenre, BPM, key, and gold dot-scale energy levels).
+
+## Phase 5: MAM Pre-training & Raveform Dataset
 - [ ] Provision the GCP CPU download VM (`electronic-taste-download`) and mount the 2 TB persistent data disk.
 - [ ] Run the download script `download_raveform.py` using `yt-dlp` to collect and resample target EDM mixes.
 - [ ] Provision the GCP GPU training VM (`electronic-taste-train`) and attach the 2 TB data disk.
@@ -27,7 +33,7 @@
 - [ ] Fine-tune the classification head on the pre-trained MAM encoder using the 10 target EDM subgenres.
 - [ ] Validate the fine-tuned model's accuracy on the EDM test set, targeting at least 55% accuracy.
 
-## Phase 5: On-Device Model Conversion & Integration
+## Phase 6: On-Device Model Conversion & Integration
 - [ ] Convert the newly fine-tuned EDM MERT model to CoreML (iOS) and ONNX (Android) formats.
 - [ ] Benchmark CoreML FP16/INT8 on physical iPhone (12 and 14+) via a minimal Swift test harness.
 - [ ] Re-quantize Android ONNX model using `quantize_static` (QLinearConv) to replace the unsupported dynamic `ConvInteger` path.
@@ -35,7 +41,7 @@
 - [ ] Embed the MERT CoreML model into the iOS codebase.
 - [ ] Embed the MERT ONNX model into the Android codebase.
 
-## Phase 6: Mobile MVP & Lightweight Backend
+## Phase 7: Mobile MVP & Lightweight Backend
 - [ ] Initialize mobile application project (React Native or Flutter).
 - [ ] Implement microphone permissions, audio capture, and native 24kHz mono resampling/preprocessing on-device.
 - [ ] Create a simple user interface to trigger recording and run on-device subgenre prediction.
@@ -43,17 +49,17 @@
 - [ ] Build API endpoints for syncing user profiles, categorization history, and feedback.
 - [ ] Implement secure authentication and token management for mobile clients.
 
-## Phase 7: User Profiles & Feedback Loop (RLHF)
+## Phase 8: User Profiles & Feedback Loop (RLHF)
 - [ ] Implement user profiles and authentication in the mobile app.
 - [ ] Design and build UI for displaying predicted subgenres, allowing user corrections/confirmations.
 - [ ] Add rating and feedback controls (e.g. thumbs up/down, 1-5 stars) to build personal taste profiles.
 - [ ] Sync feedback and correction events to the backend database to seed future model retraining.
 
-## Phase 8: Recommendation Engine
+## Phase 9: Recommendation Engine
 - [ ] Develop a content-based recommendation algorithm leveraging MERT embeddings (matching tracks by embedding distance).
 - [ ] Build a "Discover" UI in the app to present recommended electronic music tracks/artists.
 
-## Phase 9: Polish and Launch
+## Phase 10: Polish and Launch
 - [ ] Refine the UI/UX with a premium, raver-focused aesthetic.
 - [ ] Perform comprehensive beta testing in real-world environments (e.g., clubs, festivals with poor connectivity).
 - [ ] Optimize audio capture for loud, noisy environments.

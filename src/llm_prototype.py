@@ -270,7 +270,7 @@ def run_prototype(dataset_path=None, use_claude=False, llm_sample=3):
                       (to keep runtime/cost reasonable). Default: 3.
     """
     print("=" * 70)
-    print("  Electronic Taste — LLM Reasoning Model Prototype")
+    print("  Electric Taste — LLM Reasoning Model Prototype")
     print("  Phase 2, Step 3: Subgenre Classification via Feature Descriptions")
     print("=" * 70)
     

@@ -282,7 +282,7 @@ Our app needs to distinguish 20+ electronic subgenres from **noisy, real-world a
 
 A major finding of this research is that **the field has moved decisively toward end-to-end audio foundation models**. The "Feature extraction → LLM reasoning" architecture described in the original findings (Librosa → Qwen) is now a **legacy approach**. Modern models (MERT, CLAP, BEATs, AST, Qwen2-Audio) ingest raw audio directly and learn their own internal representations — capturing nuances that hand-crafted features (MFCCs, spectral centroids) often miss.
 
-### Implications for Electronic Taste
+### Implications for Electric Taste
 1. **The Librosa → text-prompt → LLM pipeline adds unnecessary fragility.** If Librosa miscalculates BPM or misses a spectral nuance, the entire prediction fails. End-to-end models sidestep this.
 2. **MERT should be the primary candidate.** It's the only model on this list purpose-built for music understanding, open-source, and achievable to fine-tune on a single A100 GPU.
 3. **CLAP enables zero-shot experimentation immediately.** Before any training, we can test CLAP zero-shot with EDM subgenre labels to get a rough accuracy signal — in hours, not weeks.
