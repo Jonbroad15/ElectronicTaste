@@ -4,6 +4,28 @@ This document outlines how to deploy the Electronic Taste subgenre classificatio
 
 ---
 
+## 0. Downloading Pre-trained Model Weights
+
+Because model weights are ignored by version control, they are hosted publicly on Google Cloud Storage. Collaborators can download the required weights directly before running the local API or scripts:
+
+### Download Links
+* **Best Classifier Head (`classifier_best.pt`):** [Download Link](https://storage.googleapis.com/electronic-taste-models-jbroadbent/models/classifier_best.pt)
+* **Label Encoder Map (`label_encoder.json`):** [Download Link](https://storage.googleapis.com/electronic-taste-models-jbroadbent/models/label_encoder.json)
+
+### Shell Setup (Automatic Download)
+You can download and place the model files into the correct folder structure using the following commands:
+
+```bash
+# Create target directory
+mkdir -p models
+
+# Download model files
+curl -o models/classifier_best.pt https://storage.googleapis.com/electronic-taste-models-jbroadbent/models/classifier_best.pt
+curl -o models/label_encoder.json https://storage.googleapis.com/electronic-taste-models-jbroadbent/models/label_encoder.json
+```
+
+---
+
 ## 1. Local Development Execution
 
 The core inference pipeline is implemented as a **FastAPI** application under `src/api/` and a CLI batch processing tool under `src/scripts/`.
