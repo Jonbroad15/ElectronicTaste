@@ -1,0 +1,93 @@
+{
+  "version": "1.1",
+  "_note": "10-class taxonomy scoped to MTG-Jamendo raw_30s_cleantags_50artists tags. Each tag_map entry lists bare tag strings AFTER stripping the 'category---' prefix that MTG-Jamendo uses (e.g. 'genre---techno' -> 'techno').",
+  "classes": [
+    "ambient",
+    "breakbeat",
+    "deep house",
+    "drum and bass",
+    "dubstep",
+    "house",
+    "industrial",
+    "minimal",
+    "techno",
+    "trance"
+  ],
+  "tag_map": {
+    "ambient": [
+      "ambient",
+      "darkambient",
+      "dark ambient",
+      "chillout",
+      "space ambient",
+      "drone ambient"
+    ],
+    "breakbeat": [
+      "breakbeat",
+      "break beat",
+      "breaks",
+      "breakbeats",
+      "electro breaks",
+      "progressive breaks"
+    ],
+    "deep house": [
+      "deephouse",
+      "deep house",
+      "deep tech",
+      "organic house"
+    ],
+    "drum and bass": [
+      "drumnbass",
+      "drum and bass",
+      "drum&bass",
+      "dnb",
+      "d&b",
+      "neurofunk",
+      "liquid dnb"
+    ],
+    "dubstep": [
+      "dubstep",
+      "dub step",
+      "brostep",
+      "melodic dubstep"
+    ],
+    "house": [
+      "house",
+      "house music",
+      "chicago house",
+      "funky house",
+      "vocal house",
+      "soulful house",
+      "afro house"
+    ],
+    "industrial": [
+      "industrial",
+      "industrial music",
+      "industrial electronic",
+      "ebm",
+      "power electronics"
+    ],
+    "minimal": [
+      "minimal",
+      "minimal techno",
+      "minimal house",
+      "microhouse",
+      "micro house"
+    ],
+    "techno": [
+      "techno",
+      "berlin techno",
+      "hard techno",
+      "dark techno"
+    ],
+    "trance": [
+      "trance",
+      "trance music",
+      "uplifting trance",
+      "eurotrance",
+      "psytrance",
+      "psy trance",
+      "goa trance"
+    ]
+  }
+}
