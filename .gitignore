@@ -10,3 +10,4 @@ data/*.zip
 data/gtzan_audio/
 data/kaggle-edm-data/
 .DS_Store
+models/
