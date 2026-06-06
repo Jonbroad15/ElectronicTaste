@@ -8,34 +8,35 @@ This document defines the finalized technologies and architecture for the Electr
 
 ## Classification Architecture (Finalized)
 
-### Primary Pipeline: MERT + Fine-Tuning
+### Primary Pipeline: On-Device MERT Inference
 
 ```
-Mobile Mic → Audio Capture (5s clip) → Backend API
-                                          ↓
-                                   MERT Encoder (frozen or fine-tuned)
-                                          ↓
-                                   768-dim Embedding
-                                          ↓
-                                   Classification Head → Subgenre Prediction
-                                          ↓
-                                   User Feedback (RLHF)
+Mobile Mic → Audio Capture (30s clip) → On-Device Preprocessing (24kHz Mono)
+                                                    ↓
+                                      On-Device MERT Encoder (CoreML / ONNX)
+                                                    ↓
+                                      768-dim Embedding
+                                                    ↓
+                                      Linear Classification Head → Subgenre Prediction (On-Device)
+                                                    ↓
+                                      Feedback/Analytics Sync → Cloud Database (Async)
 ```
 
 ### Core Model: MERT (Music Audio Representation Transformer)
 
 | Property | Value |
 |---|---|
-| **Model** | [MERT-v1-95M](https://huggingface.co/m-a-p/MERT-v1-95M) (primary) / [MERT-v1-330M](https://huggingface.co/m-a-p/MERT-v1-330M) (upgrade path) |
+| **Model** | [MERT-v1-95M](https://huggingface.co/m-a-p/MERT-v1-95M) (primary on-device encoder) |
 | **Type** | Self-supervised music foundation model (BERT-style transformer) |
-| **Input** | Raw audio waveform (24kHz) |
+| **Input** | Raw audio waveform (24kHz, 30s fixed duration for MVP, or variable with `ct.RangeDim`) |
 | **Output** | 768-dim embeddings per time step → mean-pooled |
-| **Parameters** | 94.4M (95M variant) / 330M (330M variant) |
-| **Inference Speed** | 0.14s per 5s clip (validated on Apple Silicon MPS) |
-| **Memory** | ~2–3 GB (fits comfortably in 16GB unified memory) |
+| **Parameters** | 94.4M (95M variant) |
+| **On-Device Format** | **iOS**: CoreML `.mlpackage` FP16 (189 MB) / INT8 (95 MB) <br>**Android**: ONNX FP32 (361 MB + `.data` sidecar) / INT8 (95 MB via `QLinearConv`) |
+| **Inference Speed** | **iOS (Neural Engine)**: Expected sub-1s / sub-10s (Mac CPU path: 1.1s) <br>**Android (ORT CPU)**: **7.3s** for 30s clip (validated on Pixel 10 Pro XL) |
+| **Memory/App Impact** | **iOS**: ~95 MB (INT8) <br>**Android**: ~95 MB (INT8) (both well under the 200 MB app store limit) |
 | **License** | Open source |
 
-**Why MERT**: Purpose-built for music understanding. Directly ingests raw audio — no manual feature extraction needed. Captures both timbral and structural features through dual-teacher SSL (acoustic RVQ-VAE + musical CQT). Validated locally with musically-sensible confusion patterns.
+**Why MERT**: Purpose-built for music understanding. Directly ingests raw audio — no manual feature extraction needed. Captures both timbral and structural features through dual-teacher SSL (acoustic RVQ-VAE + musical CQT). On-device deployment eliminates cloud GPU hosting costs and connectivity issues in loud venues/festivals.
 
 ### Classification Head
 
@@ -68,10 +69,10 @@ nn.Sequential(
 | [Librosa](https://librosa.org/) | Audio preprocessing, BPM detection, tempogram extraction for augmentation |
 
 ### Audio Preprocessing Pipeline
-1. **Capture**: 5-second audio clip from mobile microphone
-2. **Resample**: Convert to 24kHz mono (MERT's expected input format)
+1. **Capture**: 30-second audio clip from mobile microphone (fixed shape for MVP)
+2. **Resample**: Native on-device conversion to 24kHz mono (MERT's expected input format)
 3. **Normalize**: Peak normalize to [-1, 1]
-4. **Send**: Transmit to backend API for MERT inference
+4. **Execute**: Run on-device inference using embedded CoreML (iOS) or ONNX Runtime (Android) model
 
 ---
 
@@ -90,34 +91,37 @@ nn.Sequential(
 
 | Technology | Purpose |
 |---|---|
-| **React Native** or **Flutter** | Cross-platform mobile framework (iOS + Android) — to be decided in Phase 3 |
+| **React Native** or **Flutter** | Cross-platform mobile framework (iOS + Android) |
+| **CoreML** | On-device execution framework for iOS (FP16/INT8 models) |
+| **ONNX Runtime Mobile** | On-device execution framework for Android (`onnxruntime-android` AAR package) |
 | Native audio APIs | Microphone access and real-time audio capture |
-| REST / WebSocket API | Communication between the mobile client and the backend prediction service |
+| Native bridges / plugins | Custom native bridges for audio resampling (24kHz mono) and model execution |
+| REST API | Lightweight communication with the backend service for profile syncing, analytics, and RLHF feedback collection |
 
 ---
 
-## Backend & Infrastructure
+## Backend & Infrastructure (Lightweight MVP)
 
 | Technology | Purpose |
 |---|---|
-| **Python (FastAPI)** | Backend API for receiving audio data and returning predictions |
-| **PyTorch + HuggingFace Transformers** | MERT model loading, inference, and fine-tuning |
-| **PostgreSQL** or **SQLite** | Database for user profiles, categorization history, and feedback |
-| **Redis** (optional) | Caching layer for frequently accessed data |
-| **Docker** | Containerized deployment for the ML model and API |
-| **GCP** (primary) | Hosting for the prediction service — GPU instances for inference |
+| **Python (FastAPI)** | Lightweight backend API for syncing user profiles, history, and feedback |
+| **PostgreSQL** or **SQLite** | Database for storing user accounts, ratings, history, and RLHF tags |
+| **Docker** | Containerized deployment of backend services |
+| **Fly.io / AWS Lightsail / Supabase** | Cost-effective, CPU-only hosting for the API and database (NO active GPU hosting required) |
+| **GCP (Phase 4 & Retraining)** | Used in Phase 4 for dataset download/MAM pre-training/fine-tuning, and offline retraining workloads |
 
-### Inference Hardware Requirements
+### Hardware & Inference Requirements
 
 | Stage | Hardware | Notes |
 |---|---|---|
-| **Development / prototyping** | Apple Silicon Mac (16GB) | MERT-95M runs locally via MPS backend |
-| **Production inference** | GCP T4 or L4 GPU | ~$0.35–0.70/hr, handles MERT-330M comfortably |
-| **Fine-tuning** | GCP A100 or Colab T4 | 6–12 hours for MERT fine-tuning on ~16K tracks |
+| **Development / prototyping** | Apple Silicon Mac (16GB) | MERT-95M runs locally via MPS backend / CoreML |
+| **Model Training (Phase 4)** | GCP A100 or Colab T4 | Provisioned for MAM pre-training on Raveform mixes and EDM fine-tuning |
+| **Production Inference (MVP)** | **On-Device** (Mobile CPU / Neural Engine) | Runs natively on user device: eliminates server costs and connection latency |
+| **Model Retraining (Post-MVP)** | GCP A100 or Colab T4 | Scheduled offline batch jobs for MERT retraining based on user feedback |
 
 ---
 
-## Recommendation Engine (Phase 5)
+## Recommendation Engine (Phase 8)
 
 | Approach | Description |
 |---|---|
@@ -129,7 +133,7 @@ nn.Sequential(
 
 ---
 
-## RLHF / Feedback Loop (Phase 5+)
+## RLHF / Feedback Loop (Phase 7+)
 
 ```
 User hears track → App predicts "Melodic Techno"
@@ -145,7 +149,7 @@ User hears track → App predicts "Melodic Techno"
 
 ---
 
-## Validated Decisions (Phase 2 Research)
+## Validated Decisions (Phase 2 & Spike)
 
 | Decision | Status | Evidence |
 |---|---|---|
@@ -155,3 +159,6 @@ User hears track → App predicts "Melodic Techno"
 | Librosa → Qwen text pipeline | ❌ Deprecated | Fragile, lower accuracy ceiling, unnecessary indirection |
 | GTZAN for pipeline validation | ✅ Complete | 999 files processed, musically-sensible confusions |
 | Beatport CSV for feature baseline | ✅ Available | In `data/`, ready for RF/XGBoost comparison |
+| **On-device CoreML (iOS)** | ✅ Validated | Successfully converted to FP16 (189 MB) and INT8 (95 MB). High-accuracy parity (0.9997 / 0.9988 cosine similarity vs PyTorch) |
+| **On-device ONNX (Android)** | ✅ Validated | Successfully validated ONNX FP32 (361 MB) on Pixel 10 Pro XL. Latency **7.3 seconds** for 30-second audio clip (well below 20s budget) |
+| **Defer Cloud GPU API** | ✅ Decided | On-device execution solves the festival/club offline connectivity problem and reduces backend hosting costs to near-zero |
