@@ -11,7 +11,7 @@ The dataset consists of ~8000 hours (nearly 1 million 30s samples) of EDM music.
     *   **Acoustic Teacher:** EnCodec or RVQ-VAE to provide discrete acoustic tokens.
     *   **Musical Teacher:** Constant-Q Transform (CQT) to capture pitch/harmonic bias, crucial for distinguishing subtle melodic subgenres.
 *   **Adaptation:** Apply EDM-specific augmentations during pretraining, such as tempo stretching and pitch shifting, and in-batch noise mixup, to build robust representations.
-*   **Viability & Compute Note:** Fully continuing MAM pretraining on 8000 hours requires significant compute clusters. If compute is constrained, we recommend skipping full MAM pretraining. Instead, use the off-the-shelf 95M parameter MERT model and apply Parameter-Efficient Fine-Tuning (PEFT), specifically **LoRA**, directly on the downstream contrastive classification task.
+*   **Viability & Compute Note:** Fully continuing MAM pretraining on 8000 hours requires significant compute clusters. Due to the small model size (95M params), MAM pre-training will utilize **full fine-tuning** (no LoRA) on a smaller subset/step count. Parameter-Efficient Fine-Tuning (PEFT), specifically **LoRA**, is reserved for the downstream RaveNet classifier to prevent catastrophic forgetting of the acoustic knowledge.
 
 ## 2. Hierarchical Multi-Label Classifier Architecture
 

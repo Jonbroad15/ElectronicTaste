@@ -40,5 +40,5 @@ Build a multi-label, hierarchical classifier for EDM audio samples using a MERT 
 
 ## Out of Scope
 
-- Full MAM pre-training from scratch on 8000 hours (we will use LoRA fine-tuning instead).
+- Full MAM pre-training from scratch on 8000 hours (we will execute a shorter run using full fine-tuning, reserving LoRA for downstream classification).
 - Classifying non-EDM music.
