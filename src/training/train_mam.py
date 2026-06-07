@@ -76,12 +76,29 @@ def main():
     scheduler = get_lr_scheduler(optimizer, args.warmup_steps, args.steps)
     scaler = torch.cuda.amp.GradScaler(enabled=(device.type == "cuda"))
 
-    # Initialize streaming dataset
-    # We sample 20 random 5-second segments from each mix we open
-    dataset = RaveformStreamDataset(args.data_dir, chunks_per_file=20, seed=args.seed)
-    dataloader = DataLoader(dataset, batch_size=args.batch_size, num_workers=2, pin_memory=True)
+    # Initialize dataset
+    # We sample a random 5-second crop from each 30s chunk
+    from src.training.dataset import ProcessedChunkDataset
+    train_dir = Path(args.data_dir) / "train"
+    dataset = ProcessedChunkDataset(
+        processed_dir=train_dir,
+        splits_file="splits.json",
+        split_name="train",
+        crop_seconds=5.0
+    )
+    # We only care about waveforms for MAM
+    def collate_fn(batch):
+        waveforms = torch.stack([item[0] for item in batch])
+        return waveforms
 
-    # Determine sequence length dynamically from a dummy forward pass
+    dataloader = DataLoader(
+        dataset, 
+        batch_size=args.batch_size, 
+        shuffle=True, 
+        num_workers=2, 
+        pin_memory=True,
+        collate_fn=collate_fn
+    )
     print("Detecting model sequence length...")
     with torch.no_grad():
         dummy_input = torch.zeros(1, 120000, device=device)

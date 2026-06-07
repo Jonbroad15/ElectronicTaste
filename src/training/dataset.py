@@ -1,191 +1,89 @@
-"""AudioDataset and LabelEncoder for classifier training.
-
-Expected directory layout::
-
-    root/
-        blues/
-            blues.00000.wav
-            blues.00001.wav
-        classical/
-            ...
-
-The dataset caches preprocessed waveform tensors to ``cache_dir`` so that
-repeated training runs skip the resampling step.
-"""
-from __future__ import annotations
-
 import json
-import pickle
-from pathlib import Path
-
 import torch
+import torchaudio
+from pathlib import Path
 from torch.utils.data import Dataset
+import random
 
-from src.audio.preprocess import load_and_preprocess, SAMPLE_RATE, CLIP_SECONDS
-
-_AUDIO_EXTENSIONS = {".wav", ".mp3", ".flac"}
-
-
-# ── Label encoder ────────────────────────────────────────────────────────────
-
-class LabelEncoder:
-    """Bidirectional mapping between string label names and integer indices.
-
-    Args:
-        names: Ordered list of class names.  Index in the list equals the
-               integer label used by the model.
+class ProcessedChunkDataset(Dataset):
     """
-
-    def __init__(self, names: list[str] | None = None) -> None:
-        self._names: list[str] = names or []
-        self._index: dict[str, int] = {n: i for i, n in enumerate(self._names)}
-
-    # ------------------------------------------------------------------
-    # Properties
-    # ------------------------------------------------------------------
-
-    @property
-    def names(self) -> list[str]:
-        """Ordered list of class names."""
-        return self._names
-
-    def __len__(self) -> int:
-        return len(self._names)
-
-    # ------------------------------------------------------------------
-    # Encoding / decoding
-    # ------------------------------------------------------------------
-
-    def encode(self, label: str) -> int:
-        """Map a label name to its integer index.
-
-        Raises:
-            KeyError: if ``label`` is not in the encoder.
-        """
-        return self._index[label]
-
-    def decode(self, idx: int) -> str:
-        """Map an integer index back to a label name."""
-        return self._names[idx]
-
-    # ------------------------------------------------------------------
-    # Persistence
-    # ------------------------------------------------------------------
-
-    def save(self, path: str | Path) -> None:
-        """Save label names to a JSON file."""
-        Path(path).write_text(json.dumps(self._names, indent=2))
-
-    @classmethod
-    def load(cls, path: str | Path) -> "LabelEncoder":
-        """Load a LabelEncoder from a JSON file written by :meth:`save`."""
-        names = json.loads(Path(path).read_text())
-        return cls(names)
-
-    # ------------------------------------------------------------------
-    # Factory
-    # ------------------------------------------------------------------
-
-    @classmethod
-    def from_directory(cls, root: str | Path) -> "LabelEncoder":
-        """Build an encoder from sorted subdirectory names under ``root``.
-
-        Each subdirectory is treated as one class.  Sorting ensures
-        deterministic ordering across runs.
-        """
-        root = Path(root)
-        names = sorted(p.name for p in root.iterdir() if p.is_dir())
-        return cls(names)
-
-
-# ── Dataset ──────────────────────────────────────────────────────────────────
-
-class AudioDataset(Dataset):
-    """PyTorch dataset that loads and preprocesses audio files.
-
-    Args:
-        root:          Root directory with per-class subdirectories.
-        label_encoder: :class:`LabelEncoder` whose names match the subdir
-                       names under ``root``.
-        cache_dir:     Optional directory for caching preprocessed tensors.
-                       Pass ``None`` to disable caching.
-        clip_seconds:  Length of each clip window (default 5 s).
-        target_sr:     Target sample rate (default 24 kHz for MERT).
+    Dataset that loads preprocessed 30s .flac chunks and maps them to multi-hot genre labels
+    based on splits.json.
     """
-
     def __init__(
-        self,
-        root: str | Path,
-        label_encoder: LabelEncoder,
-        cache_dir: str | Path | None = None,
-        clip_seconds: float = CLIP_SECONDS,
-        target_sr: int = SAMPLE_RATE,
-    ) -> None:
-        self.root = Path(root)
-        self.label_encoder = label_encoder
-        self.cache_dir = Path(cache_dir) if cache_dir else None
-        self.clip_seconds = clip_seconds
+        self, 
+        processed_dir, 
+        splits_file, 
+        split_name="train", 
+        crop_seconds=None, 
+        target_sr=24000, 
+        label_list=None
+    ):
+        self.processed_dir = Path(processed_dir)
         self.target_sr = target_sr
-        self.samples: list[tuple[Path, int]] = []
-        self._discover()
-
-    # ------------------------------------------------------------------
-    # Discovery
-    # ------------------------------------------------------------------
-
-    def _discover(self) -> None:
-        """Walk ``root`` and collect ``(audio_path, label_index)`` pairs."""
-        for label_dir in sorted(self.root.iterdir()):
-            if not label_dir.is_dir():
+        self.crop_seconds = crop_seconds
+        
+        with open(splits_file, "r") as f:
+            splits = json.load(f)
+            
+        self.files = sorted(list(self.processed_dir.glob("*.flac")))
+            
+        # Build mapping from file_id -> multi-hot labels
+        self.label_list = label_list
+        if not self.label_list:
+            # build label list from splits
+            genres = set()
+            for s in ["train", "val", "test"]:
+                if s in splits:
+                    for item in splits[s]:
+                        genres.update(item.get("l1_genres", []))
+                        genres.update(item.get("l2_genres", []))
+                        genres.update(item.get("l3_genres", []))
+            self.label_list = sorted(list(genres))
+            
+        self.label_to_idx = {name: i for i, name in enumerate(self.label_list)}
+        
+        # Precompute file -> label tensors
+        self.file_to_labels = {}
+        for item in splits.get(split_name, []):
+            audio_path = item.get("audio_path", "")
+            if not audio_path:
                 continue
-            try:
-                label_idx = self.label_encoder.encode(label_dir.name)
-            except KeyError:
-                continue  # skip subdirs not in the encoder
-            for audio_file in sorted(label_dir.glob("*")):
-                if audio_file.suffix.lower() in _AUDIO_EXTENSIONS:
-                    self.samples.append((audio_file, label_idx))
+            file_id = Path(audio_path).stem
+            
+            active_genres = []
+            active_genres.extend(item.get("l1_genres", []))
+            active_genres.extend(item.get("l2_genres", []))
+            active_genres.extend(item.get("l3_genres", []))
+            
+            multi_hot = torch.zeros(len(self.label_list))
+            for g in active_genres:
+                if g in self.label_to_idx:
+                    multi_hot[self.label_to_idx[g]] = 1.0
+            self.file_to_labels[file_id] = multi_hot
 
-    # ------------------------------------------------------------------
-    # Dataset interface
-    # ------------------------------------------------------------------
+    def __len__(self):
+        return len(self.files)
 
-    def __len__(self) -> int:
-        return len(self.samples)
-
-    def __getitem__(self, idx: int) -> tuple[torch.Tensor, int]:
-        path, label = self.samples[idx]
-        waveform = self._load_cached(path)
-        return waveform, label
-
-    # ------------------------------------------------------------------
-    # Caching helpers
-    # ------------------------------------------------------------------
-
-    def _cache_key(self, audio_path: Path) -> Path | None:
-        if self.cache_dir is None:
-            return None
-        # Include preprocessing parameters in the key so that changing
-        # clip_seconds or target_sr invalidates stale cached tensors.
-        param_tag = f"sr{self.target_sr}_clip{self.clip_seconds:.1f}"
-        safe = audio_path.as_posix().replace("/", "__").replace(".", "_")
-        return self.cache_dir / f"{safe}__{param_tag}.pkl"
-
-    def _load_cached(self, path: Path) -> torch.Tensor:
-        cache_path = self._cache_key(path)
-        if cache_path and cache_path.exists():
-            with open(cache_path, "rb") as fh:
-                return pickle.load(fh)
-
-        waveform = load_and_preprocess(
-            str(path),
-            target_sr=self.target_sr,
-            clip_seconds=self.clip_seconds,
-        )
-
-        if cache_path:
-            cache_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(cache_path, "wb") as fh:
-                pickle.dump(waveform, fh)
-
-        return waveform
+    def __getitem__(self, idx):
+        path = self.files[idx]
+        # path name is like mix0002_chunk0000.flac
+        file_id = path.name.split("_chunk")[0]
+        
+        labels = self.file_to_labels.get(file_id, torch.zeros(len(self.label_list)))
+        waveform, sr = torchaudio.load(path)
+        
+        # Ensure mono
+        if waveform.shape[0] > 1:
+            waveform = waveform.mean(dim=0, keepdim=True)
+            
+        if self.crop_seconds:
+            frames = int(self.crop_seconds * sr)
+            if waveform.shape[1] > frames:
+                start = random.randint(0, waveform.shape[1] - frames)
+                waveform = waveform[:, start:start+frames]
+            else:
+                pad = frames - waveform.shape[1]
+                waveform = torch.nn.functional.pad(waveform, (0, pad))
+                
+        return waveform.squeeze(0), labels
