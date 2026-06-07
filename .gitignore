@@ -20,3 +20,8 @@ models/*.pt
 models/label_encoder.json
 training_log.csv
 results/
+
+# Phase 4 data
+data/mixes/
+data/processed/
+splits.json
