@@ -32,6 +32,19 @@ ls -lh "${MOUNT_POINT}/djmix"
 echo "=== Installing python dependencies ==="
 cd "${PROJECT_ROOT}"
 # The deeplearning image already has PyTorch + CUDA. We just need other packages.
+# First, ensure matching torchaudio version is installed to prevent ABI mismatch.
+if python3 -c "import torch" &>/dev/null; then
+    TORCH_VER=$(python3 -c "import torch; print(torch.__version__.split('+')[0])")
+    CUDA_VER=$(python3 -c "import torch; print(''.join(torch.__version__.split('+')[1:]) if '+' in torch.__version__ else '')")
+    if [ -n "${CUDA_VER}" ]; then
+        echo "Pre-installed PyTorch ${TORCH_VER}+${CUDA_VER} detected. Installing matching torchaudio..."
+        pip install --quiet "torchaudio==${TORCH_VER}+${CUDA_VER}" --extra-index-url "https://download.pytorch.org/whl/${CUDA_VER}"
+    else
+        echo "Pre-installed PyTorch ${TORCH_VER} detected. Installing matching torchaudio..."
+        pip install --quiet "torchaudio==${TORCH_VER}"
+    fi
+fi
+
 pip install -r requirements.txt --quiet
 
 # ── Launch MAM Pre-training & Fine-tuning ──────────────────────────────────
@@ -39,22 +52,37 @@ pip install -r requirements.txt --quiet
 LOG_DIR="${MOUNT_POINT}/logs"
 mkdir -p "${LOG_DIR}"
 MAM_LOG="${LOG_DIR}/mam_pretrain.log"
+CLF_LOG="${LOG_DIR}/classifier_train.log"
 
-echo "=== Launching MAM pre-training in tmux session 'train' ==="
-# Pre-training and fine-tuning command (adjust flags as needed for your pipeline)
+echo "=== Launching MAM pre-training + downstream fine-tuning in tmux session 'train' ==="
+# Chains MAM pre-training (updating MERT representation) and classifier fine-tuning
 tmux new-session -d -s train \
-    "cd ${PROJECT_ROOT} && python3 -m src.training.train \
-        --data-dir ${MOUNT_POINT}/djmix \
-        --checkpoint-dir ${MOUNT_POINT}/models \
-        --epochs 10 \
-        --batch-size 16 \
-        --device cuda \
-        2>&1 | tee ${MAM_LOG}"
+    "cd ${PROJECT_ROOT} && \
+     echo '=== PHASE 1: Masked Audio Modeling (MAM) Pre-training ===' && \
+     python3 -m src.training.train_mam \
+         --data-dir ${MOUNT_POINT}/djmix \
+         --checkpoint-dir ${MOUNT_POINT}/models/mam_pretrain \
+         --steps 50000 \
+         --save-interval 5000 \
+         --device cuda \
+         2>&1 | tee ${MAM_LOG} && \
+     echo '=== PHASE 2: Downstream Subgenre Classifier Fine-tuning ===' && \
+     python3 -m src.training.train \
+         --data-dir ${MOUNT_POINT}/djmix \
+         --checkpoint-dir ${MOUNT_POINT}/models/classifier \
+         --mert-model ${MOUNT_POINT}/models/mam_pretrain/mert_adapted \
+         --use-lora \
+         --temporal-pooling chunk_5s \
+         --loss contrastive \
+         --epochs 30 \
+         --batch-size 16 \
+         --device cuda \
+         2>&1 | tee ${CLF_LOG}"
 
 echo ""
-echo "Training launched."
-echo "  Attach:        tmux attach -t train"
-echo "  Monitor log:   tail -f ${MAM_LOG}"
+echo "Training pipeline launched."
+echo "  Attach:             tmux attach -t train"
+echo "  Monitor pre-train:  tail -f ${MAM_LOG}"
+echo "  Monitor classifier: tail -f ${CLF_LOG}"
 echo ""
-echo "When complete, copy checkpoints and shut down from your local machine:"
-echo "  bash scripts/gcp_provision_training.sh (cleanup section)"
+echo "When complete, copy checkpoints and shut down from your local machine: (cleanup section)"

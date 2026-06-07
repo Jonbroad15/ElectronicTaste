@@ -2,6 +2,8 @@
 torch>=2.2
 torchaudio>=2.2
 transformers>=4.40
+encodec>=0.1.1
+nnAudio>=0.3.3
 
 # API
 fastapi>=0.110

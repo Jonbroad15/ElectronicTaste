@@ -20,31 +20,38 @@ else
     echo "VM ${DOWNLOAD_INSTANCE} does not exist — skipping delete."
 fi
 
-echo "=== Creating GPU training VM (g2-standard-8, 1x NVIDIA L4) ==="
-# Image spec from raveform_dataset_plan.md:
-# pytorch-2-9-cu129-ubuntu-2204-nvidia-580-v20260518 from deeplearning-platform-release
-gcloud compute instances create "${TRAIN_INSTANCE}" \
-    --project="${PROJECT}" \
-    --zone="${ZONE}" \
-    --machine-type="g2-standard-8" \
-    --maintenance-policy="TERMINATE" \
-    --accelerator="type=nvidia-l4,count=1" \
-    --image-project="deeplearning-platform-release" \
-    --image="pytorch-2-9-cu129-ubuntu-2204-nvidia-580-v20260518" \
-    --boot-disk-size="100GB" \
-    --boot-disk-type="pd-ssd" \
-    --disk="name=${DATA_DISK},device-name=data,auto-delete=no"
+if gcloud compute instances describe "${TRAIN_INSTANCE}" \
+        --project="${PROJECT}" --zone="${ZONE}" &>/dev/null; then
+    echo "VM ${TRAIN_INSTANCE} already exists — skipping creation."
+else
+    # Image spec from raveform_dataset_plan.md:
+    # pytorch-2-9-cu129-ubuntu-2204-nvidia-580-v20260518 from deeplearning-platform-release
+    gcloud compute instances create "${TRAIN_INSTANCE}" \
+        --project="${PROJECT}" \
+        --zone="${ZONE}" \
+        --machine-type="g2-standard-8" \
+        --maintenance-policy="TERMINATE" \
+        --accelerator="type=nvidia-l4,count=1" \
+        --image-project="deeplearning-platform-release" \
+        --image="pytorch-2-9-cu129-ubuntu-2204-nvidia-580-v20260518" \
+        --boot-disk-size="100GB" \
+        --boot-disk-type="pd-ssd" \
+        --disk="name=${DATA_DISK},device-name=data,auto-delete=no"
+fi
 
 echo ""
 echo "GPU VM created. Waiting ~60 s for boot …"
 sleep 60
 
 echo "=== Transferring code ==="
-gcloud compute scp --recurse \
-    --project="${PROJECT}" \
-    --zone="${ZONE}" \
-    --exclude=".git,data,models,__pycache__,.venv" \
-    "$(git rev-parse --show-toplevel)/." \
+rsync -avz \
+    --exclude="/.git" \
+    --exclude="/data" \
+    --exclude="/models" \
+    --exclude="__pycache__" \
+    --exclude="/.venv" \
+    -e "bash -c 'instance=\$1; shift; exec gcloud compute ssh \"\$instance\" --project=\"${PROJECT}\" --zone=\"${ZONE}\" -- \"\$@\"' --" \
+    "$(git rev-parse --show-toplevel)/" \
     "${TRAIN_INSTANCE}:~/ElectronicTaste"
 
 echo ""
