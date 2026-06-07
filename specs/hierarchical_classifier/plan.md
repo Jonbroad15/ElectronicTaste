@@ -18,9 +18,9 @@ src/
 
 ## Step-by-Step Plan
 
-### Step 1 — Implement Contrastive LoRA MERT Model
+### Step 1 — Implement RaveNet Model
 
-1. Define `ContrastiveMERTClassifier` in `src/models/contrastive_model.py`.
+1. Define `RaveNet` in `src/models/contrastive_model.py`.
 2. Integrate `peft` (LoRA) into the 95M MERT encoder.
 3. Implement the 5s chunking and pooling aggregation logic.
 4. Add the projection head for the embedding space.
@@ -32,7 +32,7 @@ src/
 
 ### Step 3 — Update Training Script & GCP Setup
 
-1. Modify `src/training/train.py` to instantiate the `ContrastiveMERTClassifier` and use the new loss functions.
+1. Modify `src/training/train.py` to instantiate the `RaveNet` and use the new loss functions.
 2. Ensure prototypes are computed and saved at the end of the training epoch.
 3. Update `scripts/gcp_setup_training.sh` to pass the correct arguments (e.g., `--use-lora`, `--loss contrastive`).
 
