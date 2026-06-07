@@ -70,10 +70,12 @@ def main():
     for epoch in range(1, args.epochs + 1):
         model.train()
         train_loss = 0.0
+        train_samples = 0
         t0 = time.time()
         
         for waveforms, labels in train_loader:
             waveforms, labels = waveforms.to(device), labels.to(device)
+            batch_size = waveforms.size(0)
             
             optimizer.zero_grad()
             embeddings = model(waveforms)
@@ -81,21 +83,25 @@ def main():
             loss.backward()
             optimizer.step()
             
-            train_loss += loss.item()
+            train_loss += loss.item() * batch_size
+            train_samples += batch_size
             
-        train_loss /= max(1, len(train_loader))
+        train_loss /= max(1, train_samples)
         
         # Validation
         model.eval()
         val_loss = 0.0
+        val_samples = 0
         with torch.no_grad():
             for waveforms, labels in val_loader:
                 waveforms, labels = waveforms.to(device), labels.to(device)
+                batch_size = waveforms.size(0)
                 embeddings = model(waveforms)
                 loss = criterion(embeddings, labels)
-                val_loss += loss.item()
+                val_loss += loss.item() * batch_size
+                val_samples += batch_size
         
-        val_loss /= max(1, len(val_loader))
+        val_loss /= max(1, val_samples)
         elapsed = time.time() - t0
         
         print(f"Epoch {epoch:02d}/{args.epochs:02d} | Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | Time: {elapsed:.1f}s")

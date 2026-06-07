@@ -38,15 +38,18 @@ def main():
     
     print("Evaluating on Test Set...")
     test_loss = 0.0
+    test_samples = 0
     
     with torch.no_grad():
         for waveforms, labels in test_loader:
             waveforms, labels = waveforms.to(device), labels.to(device)
+            batch_size = waveforms.size(0)
             embeddings = model(waveforms)
             loss = criterion(embeddings, labels)
-            test_loss += loss.item()
+            test_loss += loss.item() * batch_size
+            test_samples += batch_size
             
-    test_loss /= max(1, len(test_loader))
+    test_loss /= max(1, test_samples)
     
     print("="*40)
     print(f"FINAL TEST LOSS (Contrastive): {test_loss:.4f}")

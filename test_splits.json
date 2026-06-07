@@ -1,0 +1,12 @@
+{
+  "train": [
+    {
+      "audio_path": "mixes/mix0002.wav"
+    }
+  ],
+  "val": [
+    {
+      "audio_path": "mixes/mix0003.wav"
+    }
+  ]
+}

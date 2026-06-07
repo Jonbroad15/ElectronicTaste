@@ -15,6 +15,7 @@ if gcloud compute instances describe "${DOWNLOAD_INSTANCE}" \
     gcloud compute instances delete "${DOWNLOAD_INSTANCE}" \
         --project="${PROJECT}" \
         --zone="${ZONE}" \
+        --keep-disks=all \
         --quiet
 else
     echo "VM ${DOWNLOAD_INSTANCE} does not exist — skipping delete."
@@ -38,7 +39,6 @@ else
         --zone="${ZONE}" \
         --machine-type="g2-standard-8" \
         --maintenance-policy="TERMINATE" \
-        --accelerator="type=nvidia-l4,count=1" \
         --image-project="deeplearning-platform-release" \
         --image="pytorch-2-9-cu129-ubuntu-2204-nvidia-580-v20260518" \
         --boot-disk-size="100GB" \

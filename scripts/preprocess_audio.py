@@ -42,23 +42,19 @@ def process_file(file_id, split_dir, source_dir, target_sr=TARGET_SR):
     block_length = int(CHUNK_LENGTH_SEC * sr)
     
     try:
-        # Note: librosa.stream is very slow for huge files. 
-        # Using soundfile blocks directly is faster if SR matches, but we assume we need to resample.
-        stream = librosa.stream(
-            str(source_path), 
-            block_length=block_length,
-            frame_length=1, # no overlap
-            hop_length=1
-        )
-        
         chunk_idx = 0
-        for y_block in stream:
+        # Use sf.blocks for memory efficient and fast streaming
+        for y_block in sf.blocks(str(source_path), blocksize=block_length, always_2d=True):
+            # y_block is (frames, channels). Convert to mono for librosa
+            y_mono = y_block.mean(axis=1)
+            
             # Resample to target SR
             if sr != target_sr:
-                y_resampled = librosa.resample(y_block, orig_sr=sr, target_sr=target_sr)
+                y_resampled = librosa.resample(y_mono, orig_sr=sr, target_sr=target_sr)
             else:
-                y_resampled = y_block
+                y_resampled = y_mono
                 
+            # y_resampled is 1D: (frames,)
             # Discard blocks that are shorter than 30s (the very end of the mix)
             if len(y_resampled) < int(target_sr * CHUNK_LENGTH_SEC):
                 continue

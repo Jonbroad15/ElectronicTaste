@@ -26,7 +26,7 @@ class ProcessedChunkDataset(Dataset):
         with open(splits_file, "r") as f:
             splits = json.load(f)
             
-        self.files = sorted(list(self.processed_dir.glob("*.flac")))
+        all_files = sorted(list(self.processed_dir.rglob("*.flac")))
             
         # Build mapping from file_id -> multi-hot labels
         self.label_list = label_list
@@ -34,33 +34,40 @@ class ProcessedChunkDataset(Dataset):
             # build label list from splits
             genres = set()
             for s in ["train", "val", "test"]:
-                if s in splits:
+                if splits.get(s):
                     for item in splits[s]:
-                        genres.update(item.get("l1_genres", []))
-                        genres.update(item.get("l2_genres", []))
-                        genres.update(item.get("l3_genres", []))
+                        genres.update(item.get("l1_genres") or [])
+                        genres.update(item.get("l2_genres") or [])
+                        genres.update(item.get("l3_genres") or [])
             self.label_list = sorted(list(genres))
             
         self.label_to_idx = {name: i for i, name in enumerate(self.label_list)}
         
         # Precompute file -> label tensors
         self.file_to_labels = {}
-        for item in splits.get(split_name, []):
+        for item in splits.get(split_name) or []:
             audio_path = item.get("audio_path", "")
             if not audio_path:
                 continue
             file_id = Path(audio_path).stem
             
             active_genres = []
-            active_genres.extend(item.get("l1_genres", []))
-            active_genres.extend(item.get("l2_genres", []))
-            active_genres.extend(item.get("l3_genres", []))
+            active_genres.extend(item.get("l1_genres") or [])
+            active_genres.extend(item.get("l2_genres") or [])
+            active_genres.extend(item.get("l3_genres") or [])
             
             multi_hot = torch.zeros(len(self.label_list))
             for g in active_genres:
                 if g in self.label_to_idx:
                     multi_hot[self.label_to_idx[g]] = 1.0
             self.file_to_labels[file_id] = multi_hot
+
+        # Strictly filter files to prevent data leakage
+        self.files = []
+        for path in all_files:
+            file_id = path.name.split("_chunk")[0]
+            if file_id in self.file_to_labels:
+                self.files.append(path)
 
     def __len__(self):
         return len(self.files)
@@ -70,12 +77,18 @@ class ProcessedChunkDataset(Dataset):
         # path name is like mix0002_chunk0000.flac
         file_id = path.name.split("_chunk")[0]
         
-        labels = self.file_to_labels.get(file_id, torch.zeros(len(self.label_list)))
+        labels = self.file_to_labels[file_id]
         waveform, sr = torchaudio.load(path)
         
         # Ensure mono
         if waveform.shape[0] > 1:
             waveform = waveform.mean(dim=0, keepdim=True)
+            
+        # Resample if needed
+        import torchaudio.functional as F
+        if sr != self.target_sr:
+            waveform = F.resample(waveform, orig_freq=sr, new_freq=self.target_sr)
+            sr = self.target_sr
             
         if self.crop_seconds:
             frames = int(self.crop_seconds * sr)

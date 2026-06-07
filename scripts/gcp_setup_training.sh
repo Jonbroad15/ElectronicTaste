@@ -59,14 +59,14 @@ CLF_LOG="${LOG_DIR}/classifier_train.log"
 echo "=== Launching Preprocessing + MAM + fine-tuning in tmux session 'train' ==="
 # Chains preprocessing, MAM pre-training, and classifier fine-tuning
 tmux new-session -d -s train \
-    "cd ${PROJECT_ROOT} && \
-     echo '=== PHASE 0: Preprocessing Audio ===' && \
+    "bash -c 'set -euo pipefail; cd ${PROJECT_ROOT} && \
+     echo \"=== PHASE 0: Preprocessing Audio ===\" && \
      python3 scripts/preprocess_audio.py \
          --splits splits.json \
          --source-dir ${MOUNT_POINT}/djmix/mixes \
          --target-dir ${MOUNT_POINT}/djmix/processed \
          2>&1 | tee ${PREPROCESS_LOG} && \
-     echo '=== PHASE 1: Masked Audio Modeling (MAM) Pre-training ===' && \
+     echo \"=== PHASE 1: Masked Audio Modeling (MAM) Pre-training ===\" && \
      python3 -m src.training.train_mam \
          --data-dir ${MOUNT_POINT}/djmix/processed \
          --checkpoint-dir ${MOUNT_POINT}/models/mam_pretrain \
@@ -74,7 +74,7 @@ tmux new-session -d -s train \
          --save-interval 5000 \
          --device cuda \
          2>&1 | tee ${MAM_LOG} && \
-     echo '=== PHASE 2: Downstream Subgenre Classifier Fine-tuning ===' && \
+     echo \"=== PHASE 2: Downstream Subgenre Classifier Fine-tuning ===\" && \
      python3 -m src.training.train \
          --data-dir ${MOUNT_POINT}/djmix/processed \
          --checkpoint-dir ${MOUNT_POINT}/models/classifier \
@@ -85,7 +85,7 @@ tmux new-session -d -s train \
          --epochs 30 \
          --batch-size 16 \
          --device cuda \
-         2>&1 | tee ${CLF_LOG}"
+         2>&1 | tee ${CLF_LOG}'"
 
 echo ""
 echo "Training pipeline launched."

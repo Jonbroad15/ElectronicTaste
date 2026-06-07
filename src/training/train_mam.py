@@ -9,7 +9,6 @@ from torch.utils.data import DataLoader
 
 from src.models.teachers import EnCodecTeacher, CQTTeacher
 from src.models.mam_model import MERTWithMAMHeads, compute_mask_indices, get_device
-from src.training.mam_dataset import RaveformStreamDataset
 
 # Set float32 matrix multiplication precision to high/medium for speedups on newer GPUs
 torch.set_float32_matmul_precision("high")
@@ -127,8 +126,6 @@ def main():
                 musical_targets = cqt_teacher.get_cqt(waveforms).to(device)
                 
             # Align teacher target sequence lengths to match MERT outputs
-            acoustic_targets = acoustic_targets[:, :, :seq_len]
-            musical_targets = musical_targets[:, :, :seq_len]
             
             # 3. Generate span mask
             # mask shape: (Batch, seq_len)
@@ -144,24 +141,31 @@ def main():
                 # logits: (Batch, 8, seq_len, 1024), cqt: (Batch, seq_len, 84)
                 acoustic_logits, cqt_logits = model(waveforms, mask_time_indices=mask)
                 
+                min_len = min(seq_len, acoustic_targets.shape[-1], musical_targets.shape[-1])
+                acoustic_targets = acoustic_targets[:, :, :min_len]
+                musical_targets = musical_targets[:, :, :min_len]
+                acoustic_logits = acoustic_logits[:, :, :min_len, :]
+                cqt_logits = cqt_logits[:, :min_len, :]
+                mask_min = mask[:, :min_len]
+                
                 # Compute acoustic cross-entropy loss over the 8 codebooks ONLY on masked positions
                 acoustic_loss = 0.0
                 for c in range(8):
-                    logits_c = acoustic_logits[:, c, :, :]  # (B, seq_len, 1024)
-                    targets_c = acoustic_targets[:, c, :]    # (B, seq_len)
+                    logits_c = acoustic_logits[:, c, :, :]  # (B, min_len, 1024)
+                    targets_c = acoustic_targets[:, c, :]    # (B, min_len)
                     
                     # select only masked frames
-                    masked_logits = logits_c[mask]           # (num_masked_frames, 1024)
-                    masked_targets = targets_c[mask]         # (num_masked_frames,)
+                    masked_logits = logits_c[mask_min]           # (num_masked_frames, 1024)
+                    masked_targets = targets_c[mask_min]         # (num_masked_frames,)
                     
                     loss_c = F.cross_entropy(masked_logits, masked_targets)
                     acoustic_loss += loss_c
                 acoustic_loss = acoustic_loss / 8.0
                 
                 # Compute CQT reconstruction loss ONLY on masked positions
-                targets_cqt = musical_targets.transpose(1, 2)  # (B, seq_len, 84)
-                masked_cqt_logits = cqt_logits[mask]           # (num_masked_frames, 84)
-                masked_cqt_targets = targets_cqt[mask]         # (num_masked_frames, 84)
+                targets_cqt = musical_targets.transpose(1, 2)  # (B, min_len, 84)
+                masked_cqt_logits = cqt_logits[mask_min]           # (num_masked_frames, 84)
+                masked_cqt_targets = targets_cqt[mask_min]         # (num_masked_frames, 84)
                 
                 loss_cqt = F.mse_loss(masked_cqt_logits, masked_cqt_targets)
                 

@@ -37,3 +37,7 @@ src/
    - Run validation on `data/processed/val`.
    - Implement an Early Stopping mechanism based on a patience threshold over `val_loss`.
 3. Create `src/training/test_model.py` that loads the best saved checkpoint (`classifier_best.pt`) and runs final metrics solely against `data/processed/test`.
+
+### Step 4: GCP Infrastructure Alignment
+1. Modify `scripts/gcp_provision_training.sh` to ensure the attached training disk has sufficient capacity to store the fully preprocessed dataset (~8000 hours of 30s `.flac` chunks).
+2. Modify `scripts/gcp_setup_training.sh` to execute `scripts/preprocess_audio.py` right before launching the training jobs, ensuring the GPU isn't left idling during setup.
