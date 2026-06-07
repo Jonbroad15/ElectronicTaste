@@ -58,6 +58,7 @@ CLF_LOG="${LOG_DIR}/classifier_train.log"
 
 echo "=== Launching Preprocessing + MAM + fine-tuning in tmux session 'train' ==="
 # Chains preprocessing, MAM pre-training, and classifier fine-tuning
+tmux kill-session -t train 2>/dev/null || true
 tmux new-session -d -s train \
     "bash -c 'set -euo pipefail; cd ${PROJECT_ROOT} && \
      echo \"=== PHASE 0: Preprocessing Audio ===\" && \
