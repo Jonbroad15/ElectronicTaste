@@ -40,6 +40,7 @@
             <button class="nav-btn" data-target="tech">Tech Stack</button>
             <button class="nav-btn" data-target="eda">Dataset EDA</button>
             <button class="nav-btn" data-target="ui-demo">UI Demo</button>
+            <button class="nav-btn" data-target="training-dashboard">Live Training</button>
         </nav>
 
         <div class="content-container">
@@ -161,6 +162,52 @@
                 </div>
 
             </section>
+
+            <section id="training-dashboard" class="content-section glassmorphism">
+                <div class="ui-container">
+                    <h2 class="section-title">Phase 1 Pre-training (Live)</h2>
+                    <p class="section-desc">Real-time metrics streaming from our GCP A100 VM.</p>
+                    <div class="status-indicator" style="display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #10b981; background: rgba(16, 185, 129, 0.1); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(16, 185, 129, 0.2); margin-bottom: 2rem;">
+                        <div class="pulse" style="width: 8px; height: 8px; border-radius: 50%; background-color: #10b981; animation: pulse-animation 2s infinite;"></div>
+                        Model is actively training
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                        <!-- Total Loss Chart -->
+                        <div class="result-card metrics-card" style="display: flex; flex-direction: column;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <span class="metric-label" style="margin:0;">TOTAL LOSS</span>
+                                <span class="metric-value" id="val-total-loss" style="color: #3b82f6;">--</span>
+                            </div>
+                            <div style="position: relative; flex-grow: 1; min-height: 200px;">
+                                <canvas id="chartTotalLoss"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Acoustic Loss Chart -->
+                        <div class="result-card metrics-card" style="display: flex; flex-direction: column;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <span class="metric-label" style="margin:0;">ACOUSTIC LOSS</span>
+                                <span class="metric-value" id="val-acoustic-loss" style="color: #f59e0b;">--</span>
+                            </div>
+                            <div style="position: relative; flex-grow: 1; min-height: 200px;">
+                                <canvas id="chartAcousticLoss"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- CQT Loss Chart -->
+                        <div class="result-card metrics-card" style="display: flex; flex-direction: column;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <span class="metric-label" style="margin:0;">MUSICAL CQT LOSS</span>
+                                <span class="metric-value" id="val-cqt-loss" style="color: #10b981;">--</span>
+                            </div>
+                            <div style="position: relative; flex-grow: 1; min-height: 200px;">
+                                <canvas id="chartCQTLoss"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
 
         <footer>
@@ -220,5 +267,54 @@
     </div>
 
     <script src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let chartTotalLoss, chartAcousticLoss, chartCQTLoss;
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.font.family = "'Outfit', sans-serif";
+        Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(15, 17, 21, 0.9)';
+
+        function createChart(ctxId, color, gradientStart) {
+            const ctx = document.getElementById(ctxId).getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+            gradient.addColorStop(0, gradientStart);
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+
+            return new Chart(ctx, {
+                type: 'line',
+                data: { labels: [], datasets: [{ data: [], borderColor: color, backgroundColor: gradient, borderWidth: 2, pointRadius: 0, fill: true, tension: 0.4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { display: true } }, animation: { duration: 0 } }
+            });
+        }
+
+        function initCharts() {
+            chartTotalLoss = createChart('chartTotalLoss', '#3b82f6', 'rgba(59, 130, 246, 0.3)');
+            chartAcousticLoss = createChart('chartAcousticLoss', '#f59e0b', 'rgba(245, 158, 11, 0.3)');
+            chartCQTLoss = createChart('chartCQTLoss', '#10b981', 'rgba(16, 185, 129, 0.3)');
+        }
+
+        async function fetchMetrics() {
+            try {
+                const response = await fetch('https://raw.githubusercontent.com/Jonbroad15/ElectronicTaste/metrics-data/dashboard/metrics.json?t=' + new Date().getTime());
+                if (!response.ok) return;
+                const data = await response.json();
+                if (data.steps && data.steps.length > 0) {
+                    const lastIdx = data.steps.length - 1;
+                    document.getElementById('val-total-loss').innerText = data.total_loss[lastIdx].toFixed(4);
+                    document.getElementById('val-acoustic-loss').innerText = data.acoustic_loss[lastIdx].toFixed(4);
+                    document.getElementById('val-cqt-loss').innerText = data.cqt_loss[lastIdx].toFixed(4);
+                    chartTotalLoss.data.labels = data.steps; chartTotalLoss.data.datasets[0].data = data.total_loss; chartTotalLoss.update();
+                    chartAcousticLoss.data.labels = data.steps; chartAcousticLoss.data.datasets[0].data = data.acoustic_loss; chartAcousticLoss.update();
+                    chartCQTLoss.data.labels = data.steps; chartCQTLoss.data.datasets[0].data = data.cqt_loss; chartCQTLoss.update();
+                }
+            } catch (error) {}
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            initCharts();
+            fetchMetrics();
+            setInterval(fetchMetrics, 30000);
+        });
+    </script>
 </body>
 </html>
