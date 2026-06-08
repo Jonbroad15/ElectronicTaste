@@ -56,6 +56,11 @@ PREPROCESS_LOG="${LOG_DIR}/preprocess.log"
 MAM_LOG="${LOG_DIR}/mam_pretrain.log"
 CLF_LOG="${LOG_DIR}/classifier_train.log"
 
+# Clear old logs to prevent confusing tail -f reads
+> "${PREPROCESS_LOG}"
+> "${MAM_LOG}"
+> "${CLF_LOG}"
+
 echo "=== Launching Preprocessing + MAM + fine-tuning in tmux session 'train' ==="
 # Chains preprocessing, MAM pre-training, and classifier fine-tuning
 tmux kill-session -t train 2>/dev/null || true
