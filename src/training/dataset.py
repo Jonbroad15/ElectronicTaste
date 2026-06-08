@@ -1,6 +1,8 @@
 import json
 import torch
 import torchaudio
+import soundfile as sf
+import numpy as np
 from pathlib import Path
 from torch.utils.data import Dataset
 import random
@@ -79,8 +81,6 @@ class ProcessedChunkDataset(Dataset):
         
         labels = self.file_to_labels[file_id]
         
-        import soundfile as sf
-        import numpy as np
         waveform_np, sr = sf.read(str(path), dtype="float32")
         waveform = torch.from_numpy(waveform_np)
         if waveform.ndim == 1:
