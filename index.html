@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Electronic Taste | Project Constitution</title>
+    <title>Electric Taste | Project Constitution</title>
     <!-- Prevent search engine indexing for privacy -->
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" href="style.css">
@@ -20,7 +20,7 @@
     <div id="auth-overlay" class="auth-overlay">
         <div class="auth-box glassmorphism">
             <h1>RESTRICTED ACCESS</h1>
-            <p>Please enter the access code to view the Electronic Taste constitution.</p>
+            <p>Please enter the access code to view the Electric Taste constitution.</p>
             <input type="password" id="password-input" placeholder="Enter password" />
             <button id="auth-submit">ENTER</button>
             <p id="auth-error" class="error-msg"></p>
@@ -30,7 +30,7 @@
     <!-- Main Content (Hidden initially) -->
     <main id="main-content" style="display: none;">
         <header class="hero">
-            <h1 class="glitch-effect" data-text="Electronic Taste">Electronic Taste</h1>
+            <h1 class="glitch-effect" data-text="Electric Taste">Electric Taste</h1>
             <p class="subtitle">Project Constitution & Documentation</p>
         </header>
 
@@ -39,6 +39,7 @@
             <button class="nav-btn" data-target="roadmap">Roadmap</button>
             <button class="nav-btn" data-target="tech">Tech Stack</button>
             <button class="nav-btn" data-target="eda">Dataset EDA</button>
+            <button class="nav-btn" data-target="ui-demo">UI Demo</button>
         </nav>
 
         <div class="content-container">
@@ -53,16 +54,170 @@
             <section id="tech" class="content-section glassmorphism">
                 <div id="tech-content" class="markdown-body">Loading Tech Stack...</div>
             </section>
-            
             <section id="eda" class="content-section glassmorphism" style="padding: 0; overflow: hidden;">
                 <iframe src="eda/index.html" style="width: 100%; height: 1200px; border: none; display: block; border-radius: 16px;"></iframe>
+            </section>
+
+            <section id="ui-demo" class="content-section glassmorphism">
+                <div class="ui-container">
+                    <h2 class="section-title">Audio Feature Extractor & Subgenre Classifier</h2>
+                    <p class="section-desc">Upload a song or mix to extract its BPM, key, energy, and classify its electronic subgenre.</p>
+                    
+                    <!-- Demo Simulation Button -->
+                    <div class="demo-trigger-container" style="text-align: center; margin-bottom: 2rem;">
+                        <button id="simulate-upload-btn" class="reset-btn" style="background: rgba(186, 85, 211, 0.08); border-color: rgba(186, 85, 211, 0.25); font-size: 0.9rem; color: #fff;">
+                            ⚡ Quick Demo (Simulate Upload)
+                        </button>
+                    </div>
+                    
+                    <!-- Uploader Box -->
+                    <div id="upload-zone" class="upload-zone">
+                        <div class="upload-content">
+                            <div class="upload-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-upload-cloud"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path><polyline points="16 16 12 12 8 16"></polyline></svg>
+                            </div>
+                            <h3>Drag & drop audio file here</h3>
+                            <p>or click to browse from your device</p>
+                            <span class="file-limits">Supports MP3, WAV, M4A, FLAC, OGG</span>
+                        </div>
+                        <input type="file" id="audio-file-input" accept="audio/*" style="display: none;" />
+                    </div>
+
+                    <!-- Error Alert -->
+                    <div id="upload-error" class="error-banner" style="display: none;">
+                        <span id="error-text">Please upload a valid audio file.</span>
+                    </div>
+
+                    <!-- Processing / Decoding Panel -->
+                    <div id="processing-panel" class="processing-panel" style="display: none;">
+                        <div class="loader-spinner"></div>
+                        <h3 id="processing-title">Decoding audio buffer...</h3>
+                        <p id="processing-file-info">track_name.mp3 (0.0 MB)</p>
+                        <div class="progress-bar-container">
+                            <div id="progress-bar-fill" class="progress-bar-fill"></div>
+                        </div>
+                        <div id="processing-steps" class="processing-steps">
+                            <div class="step-item active" id="step-decode">Decode audio channels</div>
+                            <div class="step-item" id="step-embed">Compute spectrogram embeddings</div>
+                            <div class="step-item" id="step-classify">Run zero-shot MERT classification</div>
+                        </div>
+                    </div>
+
+                    <!-- Results Dashboard -->
+                    <div id="results-panel" class="results-panel" style="display: none;">
+                        <div class="results-header">
+                            <div class="track-details">
+                                <span class="badge">ANALYSIS REPORT</span>
+                                <h3 id="result-track-name">Track Name</h3>
+                                <p id="result-track-meta">MP3 • 44.1 kHz • 4:15</p>
+                            </div>
+                            <button id="reset-button" class="reset-btn">Analyze Another</button>
+                        </div>
+
+                        <div class="results-grid">
+                            <!-- Primary Classifier Card -->
+                            <div class="result-card main-prediction">
+                                <span class="card-label">PREDICTED SUBGENRE</span>
+                                <div id="result-subgenre" class="genre-glow">Progressive House</div>
+                                <div class="confidence-gauge">
+                                    <div class="confidence-label">Confidence Score: <span id="result-confidence">92%</span></div>
+                                    <div class="progress-bar-container">
+                                        <div id="result-confidence-bar" class="progress-bar-fill" style="width: 92%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Audio Details Card -->
+                            <div class="result-card metrics-card">
+                                <div class="metric-row">
+                                    <div class="metric-item">
+                                        <span class="metric-label">TEMPO / BPM</span>
+                                        <span class="metric-value" id="result-bpm">128</span>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-label">KEY SIGNATURE</span>
+                                        <span class="metric-value" id="result-key">8A (A Minor)</span>
+                                    </div>
+                                </div>
+                                <div class="metric-row">
+                                    <div class="metric-item">
+                                        <span class="metric-label">ENERGY LEVEL: <span id="result-energy-text" style="color: #fff; font-weight: 600;">8.5 / 10</span></span>
+                                        <div id="result-energy-dots" class="energy-dots">
+                                            <!-- Dynamically filled -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Subgenre Probabilities list -->
+                        <div class="result-card full-width-card">
+                            <h4 class="card-subtitle">Probabilistic Distribution</h4>
+                            <div class="prob-list" id="probability-distribution-list">
+                                <!-- Dynamically generated probability list rows -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </section>
         </div>
 
         <footer>
-            <p>&copy; Electronic Taste Project</p>
+            <div class="footer-socials">
+                <a href="#" class="social-link" target="_blank" rel="noopener noreferrer">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-instagram"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                    <span>@electric.taste</span>
+                </a>
+                <a href="#" class="social-link" target="_blank" rel="noopener noreferrer">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-twitter"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path></svg>
+                    <span>@electrictaste</span>
+                </a>
+                <a href="#" class="social-link" target="_blank" rel="noopener noreferrer">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-music"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                    <span>TikTok @electric_taste</span>
+                </a>
+            </div>
+            <p>&copy; 2026 Electric Taste. All rights reserved.</p>
         </footer>
     </main>
+
+    <!-- Feedback FAB -->
+    <button id="feedback-trigger" class="feedback-fab" title="Provide Suggestions & Feedback">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-message-square"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+    </button>
+
+    <!-- Feedback Modal -->
+    <div id="feedback-modal" class="feedback-modal-overlay" style="display: none;">
+        <div class="feedback-modal glassmorphism">
+            <div class="feedback-modal-header">
+                <h3>Submit Suggestions & Feedback</h3>
+                <button id="feedback-close" class="close-btn">&times;</button>
+            </div>
+            <div class="feedback-modal-body">
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">We'd love to hear your thoughts, feature requests, or subgenre correction reports.</p>
+                <div class="feedback-field">
+                    <label for="feedback-name">Your Name</label>
+                    <input type="text" id="feedback-name" placeholder="Optional" />
+                </div>
+                <div class="feedback-field">
+                    <label for="feedback-category">Feedback Category</label>
+                    <select id="feedback-category">
+                        <option value="genre">Genre/Subgenre Classification</option>
+                        <option value="ui">UI/UX and Design improvements</option>
+                        <option value="feature">New Feature Ideas</option>
+                        <option value="bug">Report a Bug</option>
+                    </select>
+                </div>
+                <div class="feedback-field">
+                    <label for="feedback-text">Details</label>
+                    <textarea id="feedback-text" rows="4" placeholder="Enter your suggestions here..."></textarea>
+                </div>
+                <button id="feedback-submit" class="reset-btn" style="width: 100%; margin-top: 1rem; background: var(--accent); border-color: var(--accent); color: #fff;">Send Feedback</button>
+                <p id="feedback-success-msg" class="success-msg" style="display: none; color: var(--accent-green); text-align: center; margin-top: 1rem; font-weight: 600;">Feedback submitted successfully! Thank you.</p>
+            </div>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>

@@ -1,6 +1,16 @@
 # Changelog
 
-All notable changes to the Electronic Taste project will be documented in this file.
+All notable changes to the Electric Taste project will be documented in this file.
+
+## [Phase 4] - 2026-06-06
+
+### Added
+- **UI Demo Section**: Implemented an interactive dashboard tab featuring a file uploader, loading indicators, and a mockup analysis report card.
+- **Audio Context Decoding**: Integrated client-side Web Audio API to decode array buffers, yielding true duration and sample rates.
+- **Interactive Simulation**: Created a "Quick Demo" trigger to simulate EDM track uploads and processing workflows.
+- **Gold Scale Energy & 3 Key Analytics**: Refactored metrics grid to display BPM, Key Signature, and a 1–10 Energy scale styled with gold dot symbols.
+- **Footer Social widgets**: Added Instagram, Twitter, and TikTok SVG icons and handles to the site footer.
+- **Suggestions FAB Modal**: Integrated a floating action button linking to a glassmorphic user feedback collection modal.
 
 ## [Phase 3] - 2026-06-06
 
