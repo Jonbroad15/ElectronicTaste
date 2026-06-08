@@ -106,8 +106,21 @@ def main():
         seq_len = dummy_out.last_hidden_state.shape[1]
     print(f"MERT sequence length for 5s audio chunk is: {seq_len} frames")
 
-    print("Starting pre-training loop...")
     step = 0
+    # Auto-resume logic
+    checkpoints = sorted(ckpt_dir.glob("mam_checkpoint_*.pt"))
+    if checkpoints:
+        latest_ckpt = checkpoints[-1]
+        print(f"Resuming from checkpoint: {latest_ckpt}")
+        ckpt = torch.load(latest_ckpt, map_location=device)
+        model.load_state_dict(ckpt["model_state_dict"])
+        optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+        scheduler.load_state_dict(ckpt["scheduler_state_dict"])
+        step = ckpt["step"]
+        print(f"Resumed at step {step}")
+
+    print("Starting pre-training loop...")
+    initial_step = step
     t0 = time.time()
     
     # Iterate over stream infinite-loop style until total steps reached
@@ -183,9 +196,9 @@ def main():
             step += 1
             
             # 6. Logging
-            if step % 50 == 0 or step == 1:
+            if step % 50 == 0 or step == initial_step + 1:
                 elapsed = time.time() - t0
-                steps_per_sec = step / max(0.1, elapsed)
+                steps_per_sec = (step - initial_step) / max(0.1, elapsed)
                 current_lr = scheduler.get_last_lr()[0]
                 print(
                     f"Step {step:6d}/{args.steps:6d} | "
