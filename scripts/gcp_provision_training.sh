@@ -50,11 +50,11 @@ else
         --boot-disk-size="100GB" \
         --boot-disk-type="pd-ssd" \
         --disk="name=${DATA_DISK},device-name=data,auto-delete=no"
-fi
 
-echo ""
-echo "GPU VM created. Waiting ~60 s for boot …"
-sleep 60
+    echo ""
+    echo "GPU VM created. Waiting ~60 s for boot …"
+    sleep 60
+fi
 
 echo "=== Transferring code ==="
 rsync -avz \
