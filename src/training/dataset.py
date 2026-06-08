@@ -78,7 +78,15 @@ class ProcessedChunkDataset(Dataset):
         file_id = path.name.split("_chunk")[0]
         
         labels = self.file_to_labels[file_id]
-        waveform, sr = torchaudio.load(path)
+        
+        import soundfile as sf
+        import numpy as np
+        waveform_np, sr = sf.read(str(path), dtype="float32")
+        waveform = torch.from_numpy(waveform_np)
+        if waveform.ndim == 1:
+            waveform = waveform.unsqueeze(0)
+        else:
+            waveform = waveform.t()  # shape (channels, frames)
         
         # Ensure mono
         if waveform.shape[0] > 1:
