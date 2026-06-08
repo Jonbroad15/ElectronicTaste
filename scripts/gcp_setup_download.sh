@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 # STEP 1b — run this INSIDE the download VM (electronic-taste-download).
-# Mounts the data disk, installs yt-dlp + ffmpeg, launches the Raveform download.
+# Mounts the data disk, installs yt-dlp + ffmpeg, annotates any existing mixes,
+# then launches the expanded Raveform download in a tmux session.
 set -euo pipefail
 
 DATA_DISK="/dev/disk/by-id/google-data"
 MOUNT_POINT="/mnt/data"
 PROJECT_ROOT="${HOME}/ElectronicTaste"
 
-# ── Mount the 2 TB data disk ───────────────────────────────────────────────
-
+# ---------------------------------------------------------------------------
+# Mount the 2 TB data disk
+# ---------------------------------------------------------------------------
 echo "=== Mounting data disk ==="
 if ! mountpoint -q "${MOUNT_POINT}"; then
     sudo mkdir -p "${MOUNT_POINT}"
@@ -21,33 +23,65 @@ fi
 sudo chmod 777 "${MOUNT_POINT}"
 echo "Disk mounted at ${MOUNT_POINT} ($(df -h ${MOUNT_POINT} | tail -1 | awk '{print $4}') free)"
 
-# ── Install dependencies (no PyTorch needed for download) ──────────────────
-
+# ---------------------------------------------------------------------------
+# Install dependencies
+# ---------------------------------------------------------------------------
 echo "=== Installing packages ==="
 sudo apt-get update -q
 sudo apt-get install -y -q ffmpeg tmux python3-pip
 
-pip3 install --quiet --upgrade pip
-pip3 install --quiet yt-dlp
+pip3 install --quiet --break-system-packages --upgrade pip
+pip3 install --quiet --break-system-packages yt-dlp
 
-# ── Launch download in tmux ─────────────────────────────────────────────────
-
+# ---------------------------------------------------------------------------
+# Annotate existing mixes (synchronous — must complete before download starts)
+# ---------------------------------------------------------------------------
 OUTPUT_DIR="${MOUNT_POINT}/djmix"
-LOG="${MOUNT_POINT}/download_raveform.log"
+MANIFEST="${OUTPUT_DIR}/djmix_manifest_raw.json"
 
-echo "=== Launching Raveform download in tmux session 'download' ==="
+echo "=== Annotating existing mixes ==="
+if [[ -f "${MANIFEST}" ]]; then
+    echo "Found manifest at ${MANIFEST} — running annotate_raveform.py ..."
+    python3 "${PROJECT_ROOT}/scripts/annotate_raveform.py" \
+        --djmix-dir "${OUTPUT_DIR}" \
+        --manifest "${MANIFEST}" \
+        --output "${OUTPUT_DIR}/labels.json"
+    echo "Annotation complete."
+else
+    echo "No manifest found at ${MANIFEST} — skipping annotation step."
+fi
+
+# ---------------------------------------------------------------------------
+# Launch expanded download in a tmux session (background)
+# ---------------------------------------------------------------------------
+LOG="${MOUNT_POINT}/download_raveform_expanded.log"
+
+echo "=== Launching expanded Raveform download in tmux session 'download' ==="
 tmux new-session -d -s download \
     "cd ${PROJECT_ROOT} && python3 scripts/download_raveform.py \
         --output-dir ${OUTPUT_DIR} \
         --workers 8 \
-        --max-per-class 600 \
+        --manifest-cache ${OUTPUT_DIR}/djmix_manifest_raw.json \
+        --labels ${OUTPUT_DIR}/labels.json \
         2>&1 | tee ${LOG}"
 
 echo ""
-echo "Download launched."
-echo "  Attach:        tmux attach -t download"
-echo "  Monitor log:   tail -f ${LOG}"
-echo "  Check counts:  ls ${OUTPUT_DIR}"
+echo "=========================================================="
+echo "  Expanded download launched in tmux session 'download'."
+echo "=========================================================="
 echo ""
-echo "When complete, return to your local machine and run:"
-echo "  bash scripts/gcp_provision_training.sh"
+echo "  Attach to session:     tmux attach -t download"
+echo "  Monitor log:           tail -f ${LOG}"
+echo "  Check downloaded dirs: ls ${OUTPUT_DIR}"
+echo ""
+echo "Once the download finishes, run create_splits.py:"
+echo ""
+echo "  python3 ${PROJECT_ROOT}/scripts/create_splits.py \\"
+echo "      --manifest ${OUTPUT_DIR}/djmix_manifest_raw.json \\"
+echo "      --labels   ${OUTPUT_DIR}/labels.json \\"
+echo "      --output-dir ${OUTPUT_DIR}/splits"
+echo ""
+echo "When fully done, delete this VM from your local machine:"
+echo ""
+echo "  gcloud compute instances delete electronic-taste-download --zone=<ZONE> --quiet"
+echo ""

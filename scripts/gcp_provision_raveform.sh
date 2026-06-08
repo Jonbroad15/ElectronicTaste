@@ -24,27 +24,34 @@ else
     echo "Disk ${DATA_DISK} already exists — skipping."
 fi
 
-echo "=== Creating CPU-only download VM (n2-standard-4, no GPU) ==="
-gcloud compute instances create "${DOWNLOAD_INSTANCE}" \
-    --project="${PROJECT}" \
-    --zone="${ZONE}" \
-    --machine-type="n2-standard-4" \
-    --image-project="debian-cloud" \
-    --image-family="debian-12" \
-    --boot-disk-size="20GB" \
-    --boot-disk-type="pd-standard" \
-    --disk="name=${DATA_DISK},device-name=data,auto-delete=no"
+if gcloud compute instances describe "${DOWNLOAD_INSTANCE}" \
+        --project="${PROJECT}" --zone="${ZONE}" &>/dev/null; then
+    echo "VM ${DOWNLOAD_INSTANCE} already exists — skipping creation."
+else
+    gcloud compute instances create "${DOWNLOAD_INSTANCE}" \
+        --project="${PROJECT}" \
+        --zone="${ZONE}" \
+        --machine-type="n2-standard-4" \
+        --image-project="debian-cloud" \
+        --image-family="debian-12" \
+        --boot-disk-size="20GB" \
+        --boot-disk-type="pd-standard" \
+        --disk="name=${DATA_DISK},device-name=data,auto-delete=no"
+fi
 
 echo ""
 echo "VM created.  Waiting ~60 s for boot …"
 sleep 60
 
 echo "=== Transferring code ==="
-gcloud compute scp --recurse \
-    --project="${PROJECT}" \
-    --zone="${ZONE}" \
-    --exclude=".git,data,models,__pycache__,.venv" \
-    "$(git rev-parse --show-toplevel)/." \
+rsync -avz \
+    --exclude="/.git" \
+    --exclude="/data" \
+    --exclude="/models" \
+    --exclude="__pycache__" \
+    --exclude="/.venv" \
+    -e "bash -c 'instance=\$1; shift; exec gcloud compute ssh \"\$instance\" --project=\"${PROJECT}\" --zone=\"${ZONE}\" -- \"\$@\"' --" \
+    "$(git rev-parse --show-toplevel)/" \
     "${DOWNLOAD_INSTANCE}:~/ElectronicTaste"
 
 echo ""
