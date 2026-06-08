@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from src.models.teachers import EnCodecTeacher, CQTTeacher
-from src.models.mam_model import MERTWithMAMHeads, compute_mask_indices, get_device
+from src.models.mam_model import MERTWithMAMHeads, compute_mask_indices
 
 # Set float32 matrix multiplication precision to high/medium for speedups on newer GPUs
 torch.set_float32_matmul_precision("high")
@@ -54,7 +54,7 @@ def main():
     ckpt_dir.mkdir(parents=True, exist_ok=True)
 
     # Set device and seed
-    device = get_device(args.device)
+    device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     torch.manual_seed(args.seed)
     if device.type == "cuda":
         torch.cuda.manual_seed_all(args.seed)
