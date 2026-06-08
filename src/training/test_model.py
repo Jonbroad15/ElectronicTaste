@@ -14,6 +14,7 @@ def main():
     parser.add_argument("--data-dir", required=True)
     parser.add_argument("--checkpoint", required=True, help="Path to classifier_best.pt")
     parser.add_argument("--mert-model", default="m-a-p/MERT-v1-95M")
+    parser.add_argument("--splits", default="splits.json")
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--device", default=None)
     args = parser.parse_args()
@@ -22,7 +23,7 @@ def main():
     print(f"Device: {device}")
 
     test_dir = Path(args.data_dir) / "test"
-    splits_file = "splits.json"
+    splits_file = args.splits
 
     print("Loading test dataset...")
     test_dataset = ProcessedChunkDataset(test_dir, splits_file, split_name="test")

@@ -28,6 +28,7 @@ def main():
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--device", default=None)
+    parser.add_argument("--splits", default="splits.json", help="Path to splits.json")
     parser.add_argument("--patience", type=int, default=5, help="Early stopping patience")
     # Ignored legacy args to avoid breaking gcp script
     parser.add_argument("--use-lora", action="store_true")
@@ -41,8 +42,7 @@ def main():
     train_dir = Path(args.data_dir) / "train"
     val_dir = Path(args.data_dir) / "val"
     
-    # We will use splits.json located in the project root
-    splits_file = "splits.json"
+    splits_file = args.splits
 
     print("Loading datasets...")
     train_dataset = ProcessedChunkDataset(train_dir, splits_file, split_name="train")

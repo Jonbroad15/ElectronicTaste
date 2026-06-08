@@ -68,12 +68,13 @@ tmux new-session -d -s train \
     "bash -c 'set -euo pipefail; cd ${PROJECT_ROOT} && \
      echo \"=== PHASE 0: Preprocessing Audio ===\" && \
      python3 scripts/preprocess_audio.py \
-         --splits splits.json \
+         --splits ${MOUNT_POINT}/djmix/splits.json \
          --source-dir ${MOUNT_POINT}/djmix/mixes \
          --target-dir ${MOUNT_POINT}/djmix/processed \
          2>&1 | tee ${PREPROCESS_LOG} && \
      echo \"=== PHASE 1: Masked Audio Modeling (MAM) Pre-training ===\" && \
      python3 -m src.training.train_mam \
+         --splits ${MOUNT_POINT}/djmix/splits.json \
          --data-dir ${MOUNT_POINT}/djmix/processed \
          --checkpoint-dir ${MOUNT_POINT}/models/mam_pretrain \
          --steps 50000 \
@@ -82,6 +83,7 @@ tmux new-session -d -s train \
          2>&1 | tee ${MAM_LOG} && \
      echo \"=== PHASE 2: Downstream Subgenre Classifier Fine-tuning ===\" && \
      python3 -m src.training.train \
+         --splits ${MOUNT_POINT}/djmix/splits.json \
          --data-dir ${MOUNT_POINT}/djmix/processed \
          --checkpoint-dir ${MOUNT_POINT}/models/classifier \
          --mert-model ${MOUNT_POINT}/models/mam_pretrain/mert_adapted \

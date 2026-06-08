@@ -34,6 +34,7 @@ def main():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("--data-dir", required=True, help="Path to DJ mixes dataset directory")
+    parser.add_argument("--splits", default="splits.json", help="Path to splits.json file")
     parser.add_argument("--checkpoint-dir", default="/mnt/data/models/mam_pretrain", help="Directory to save checkpoints")
     parser.add_argument("--mert-model", default="m-a-p/MERT-v1-95M", help="Base MERT model path")
     parser.add_argument("--steps", type=int, default=50000, help="Total training steps")
@@ -81,7 +82,7 @@ def main():
     train_dir = Path(args.data_dir) / "train"
     dataset = ProcessedChunkDataset(
         processed_dir=train_dir,
-        splits_file="splits.json",
+        splits_file=args.splits,
         split_name="train",
         crop_seconds=5.0
     )
