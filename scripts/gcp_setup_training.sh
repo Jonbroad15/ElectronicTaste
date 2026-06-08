@@ -15,7 +15,7 @@ if ! mountpoint -q "${MOUNT_POINT}"; then
     sudo mount "${DATA_DISK}" "${MOUNT_POINT}"
 fi
 sudo resize2fs "${DATA_DISK}" || true
-sudo chmod 777 "${MOUNT_POINT}"
+sudo chmod -R 777 "${MOUNT_POINT}"
 echo "Disk mounted at ${MOUNT_POINT} ($(df -h ${MOUNT_POINT} | tail -1 | awk '{print $4}') free)"
 
 # ── Check data ─────────────────────────────────────────────────────────────
