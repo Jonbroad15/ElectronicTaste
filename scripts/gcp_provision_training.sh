@@ -25,12 +25,18 @@ if gcloud compute instances describe "${TRAIN_INSTANCE}" \
         --project="${PROJECT}" --zone="${ZONE}" &>/dev/null; then
     echo "VM ${TRAIN_INSTANCE} already exists — skipping creation."
 else
-    echo "Resizing data disk to 4TB to ensure sufficient space for processed chunks..."
-    gcloud compute disks resize "${DATA_DISK}" \
-        --size=4000GB \
-        --project="${PROJECT}" \
-        --zone="${ZONE}" \
-        --quiet || true
+    echo "Checking data disk size..."
+    CURRENT_SIZE=$(gcloud compute disks describe "${DATA_DISK}" --project="${PROJECT}" --zone="${ZONE}" --format="value(sizeGb)")
+    if [ "${CURRENT_SIZE}" -lt 4000 ]; then
+        echo "Resizing data disk from ${CURRENT_SIZE}GB to 4TB to ensure sufficient space for processed chunks..."
+        gcloud compute disks resize "${DATA_DISK}" \
+            --size=4000GB \
+            --project="${PROJECT}" \
+            --zone="${ZONE}" \
+            --quiet || true
+    else
+        echo "Data disk is already ${CURRENT_SIZE}GB, skipping resize."
+    fi
 
     # Image spec from raveform_dataset_plan.md:
     # pytorch-2-9-cu129-ubuntu-2204-nvidia-580-v20260518 from deeplearning-platform-release
