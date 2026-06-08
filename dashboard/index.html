@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ElectronicTaste | Training Dashboard</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f1115;
+            --surface-color: rgba(30, 33, 40, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent-primary: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.5);
+            --chart-red: #ef4444;
+            --chart-green: #10b981;
+            --chart-yellow: #f59e0b;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(239, 68, 68, 0.05), transparent 25%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            width: 100%;
+            padding: 2rem 0;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(15, 17, 21, 0.8);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            margin: 0.5rem 0 0 0;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            padding: 3rem 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 2rem;
+        }
+
+        .card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(16px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 0 0 15px rgba(59, 130, 246, 0.1);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .latest-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            text-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .chart-container {
+            position: relative;
+            flex-grow: 1;
+            min-height: 300px;
+            width: 100%;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 1rem;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+        }
+
+        .refresh-btn:active {
+            transform: translateY(1px);
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--chart-green);
+            background: rgba(16, 185, 129, 0.1);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            margin-top: 1rem;
+        }
+        
+        .pulse {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--chart-green);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse-animation 2s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>ElectronicTaste Training Dashboard</h1>
+        <p class="subtitle">Phase 1: Masked Audio Modeling (MERT + EnCodec + CQT)</p>
+        <div class="status-indicator">
+            <div class="pulse"></div>
+            Model is actively training
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Total Loss Chart -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Total Loss</h2>
+                <div class="latest-value" id="val-total-loss">--</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="chartTotalLoss"></canvas>
+            </div>
+        </div>
+
+        <!-- Acoustic Loss Chart -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Acoustic Loss (EnCodec)</h2>
+                <div class="latest-value" id="val-acoustic-loss" style="color: var(--chart-yellow); text-shadow: 0 0 10px rgba(245, 158, 11, 0.5);">--</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="chartAcousticLoss"></canvas>
+            </div>
+        </div>
+
+        <!-- CQT Loss Chart -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Musical Loss (CQT)</h2>
+                <div class="latest-value" id="val-cqt-loss" style="color: var(--chart-green); text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);">--</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="chartCQTLoss"></canvas>
+            </div>
+        </div>
+
+        <!-- Learning Rate Chart -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Learning Rate & Speed</h2>
+                <div class="latest-value" id="val-lr" style="color: #a78bfa; text-shadow: 0 0 10px rgba(167, 139, 250, 0.5);">--</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="chartLR"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <button class="refresh-btn" onclick="fetchData()">Manual Refresh</button>
+
+    <script>
+        // Global Chart instances
+        let chartTotalLoss, chartAcousticLoss, chartCQTLoss, chartLR;
+
+        // Chart.js default theme configuration for dark mode
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(15, 17, 21, 0.9)';
+        Chart.defaults.plugins.tooltip.titleColor = '#f1f5f9';
+        Chart.defaults.plugins.tooltip.bodyColor = '#f1f5f9';
+        Chart.defaults.plugins.tooltip.borderColor = 'rgba(255, 255, 255, 0.1)';
+        Chart.defaults.plugins.tooltip.borderWidth = 1;
+        Chart.defaults.plugins.tooltip.padding = 12;
+        Chart.defaults.plugins.tooltip.cornerRadius = 8;
+        Chart.defaults.scale.grid.color = 'rgba(255, 255, 255, 0.05)';
+
+        function createChart(ctxId, label, color, gradientStart, gradientEnd) {
+            const ctx = document.getElementById(ctxId).getContext('2d');
+            
+            // Create gradient fill
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, gradientStart);
+            gradient.addColorStop(1, gradientEnd);
+
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: label,
+                        data: [],
+                        borderColor: color,
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        pointBackgroundColor: color,
+                        pointBorderColor: '#1e2128',
+                        pointBorderWidth: 2,
+                        pointRadius: 0, // hide points for cleaner look unless hovered
+                        pointHoverRadius: 6,
+                        fill: true,
+                        tension: 0.4 // smooth curves
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Training Steps' },
+                            grid: { display: false }
+                        },
+                        y: {
+                            title: { display: false },
+                            beginAtZero: false
+                        }
+                    },
+                    animation: {
+                        duration: 800,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+
+        function initCharts() {
+            chartTotalLoss = createChart('chartTotalLoss', 'Total Loss', '#3b82f6', 'rgba(59, 130, 246, 0.3)', 'rgba(59, 130, 246, 0.0)');
+            chartAcousticLoss = createChart('chartAcousticLoss', 'Acoustic Loss', '#f59e0b', 'rgba(245, 158, 11, 0.3)', 'rgba(245, 158, 11, 0.0)');
+            chartCQTLoss = createChart('chartCQTLoss', 'CQT Loss', '#10b981', 'rgba(16, 185, 129, 0.3)', 'rgba(16, 185, 129, 0.0)');
+            chartLR = createChart('chartLR', 'Learning Rate', '#a78bfa', 'rgba(167, 139, 250, 0.3)', 'rgba(167, 139, 250, 0.0)');
+        }
+
+        function updateChart(chart, labels, data) {
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = data;
+            chart.update();
+        }
+
+        async function fetchData() {
+            try {
+                // Append timestamp to prevent aggressive browser caching
+                const response = await fetch('metrics.json?t=' + new Date().getTime());
+                if (!response.ok) throw new Error("Failed to load metrics.json");
+                
+                const data = await response.json();
+                
+                if (data.steps && data.steps.length > 0) {
+                    const lastIdx = data.steps.length - 1;
+                    
+                    // Update latest values in cards
+                    document.getElementById('val-total-loss').innerText = data.total_loss[lastIdx].toFixed(4);
+                    document.getElementById('val-acoustic-loss').innerText = data.acoustic_loss[lastIdx].toFixed(4);
+                    document.getElementById('val-cqt-loss').innerText = data.cqt_loss[lastIdx].toFixed(4);
+                    document.getElementById('val-lr').innerText = data.lr[lastIdx].toExponential(2);
+
+                    // Update charts
+                    updateChart(chartTotalLoss, data.steps, data.total_loss);
+                    updateChart(chartAcousticLoss, data.steps, data.acoustic_loss);
+                    updateChart(chartCQTLoss, data.steps, data.cqt_loss);
+                    updateChart(chartLR, data.steps, data.lr);
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
+        }
+
+        // Initialize and fetch
+        document.addEventListener("DOMContentLoaded", () => {
+            initCharts();
+            fetchData();
+            // Auto-refresh every 10 seconds (in case metrics.json is updated locally)
+            setInterval(fetchData, 10000);
+        });
+    </script>
+</body>
+</html>
