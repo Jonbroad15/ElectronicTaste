@@ -6,49 +6,54 @@ This document defines the finalized technologies and architecture for the Electr
 
 ---
 
-## Classification Architecture (Finalized)
+## Classification Architecture (RaveNet & MAM Pretraining)
 
-### Primary Pipeline: On-Device MERT Inference
+### Primary Pipeline: RaveNet Hierarchical Classifier
 
-```
-Mobile Mic → Audio Capture (30s clip) → On-Device Preprocessing (24kHz Mono)
-                                                    ↓
-                                      On-Device MERT Encoder (CoreML / ONNX)
-                                                    ↓
-                                      768-dim Embedding
-                                                    ↓
-                                      Linear Classification Head → Subgenre Prediction (On-Device)
-                                                    ↓
-                                      Feedback/Analytics Sync → Cloud Database (Async)
+The core architecture, dubbed **RaveNet**, relies on a MERT backbone pre-trained via Masked Acoustic Modeling (MAM) on the massive EDM Raveform dataset, followed by a hierarchical multi-label classification head and prototypical contrastive learning for continuous adaptation.
+
+```mermaid
+graph TD
+    subgraph MAM Pretraining Phase
+        A[Raveform Dataset ~8k hours EDM] --> B[MERT 95M Backbone]
+        B --> C[Masked Acoustic Modeling]
+        C --> D[Adapted EDM MERT Encoder]
+    end
+
+    subgraph RaveNet Classifier
+        E[30s Audio Segment] --> F[Chunk into 5s Segments]
+        F --> D
+        D -- LoRA Adaptation --> G[Sequence Embeddings]
+        G --> H[Temporal Aggregation / Pooling]
+        H --> I[Hierarchical Prediction Heads]
+        
+        I --> J[L1: Broad Genre e.g. Techno/Trance]
+        I --> K[L2: Primary Subgenre e.g. Techno]
+        I --> L[L3: Granular Subgenre e.g. Acid Techno]
+    end
+    
+    subgraph Continual Learning
+        M[User Feedback / New Subgenres] --> N[Compute Prototypical Embeddings]
+        N -. Few-Shot Insert .-> I
+    end
 ```
 
 ### Core Model: MERT (Music Audio Representation Transformer)
 
 | Property | Value |
 |---|---|
-| **Model** | [MERT-v1-95M](https://huggingface.co/m-a-p/MERT-v1-95M) (primary on-device encoder) |
+| **Model** | [MERT-v1-95M](https://huggingface.co/m-a-p/MERT-v1-95M) (adapted to RaveNet via MAM) |
 | **Type** | Self-supervised music foundation model (BERT-style transformer) |
-| **Input** | Raw audio waveform (24kHz, 30s fixed duration for MVP, or variable with `ct.RangeDim`) |
-| **Output** | 768-dim embeddings per time step → mean-pooled |
+| **Input** | Raw audio waveform (24kHz, chunked into 5s segments for temporal aggregation) |
+| **Output** | 768-dim embeddings per time step → aggregated to clip-level representation |
 | **Parameters** | 94.4M (95M variant) |
-| **On-Device Format** | **iOS**: CoreML `.mlpackage` FP16 (189 MB) / INT8 (95 MB) <br>**Android**: ONNX FP32 (361 MB + `.data` sidecar) / INT8 (95 MB via `QLinearConv`) |
-| **Inference Speed** | **iOS (Neural Engine)**: Expected sub-1s / sub-10s (Mac CPU path: 1.1s) <br>**Android (ORT CPU)**: **7.3s** for 30s clip (validated on Pixel 10 Pro XL) |
-| **Memory/App Impact** | **iOS**: ~95 MB (INT8) <br>**Android**: ~95 MB (INT8) (both well under the 200 MB app store limit) |
-| **License** | Open source |
+| **On-Device Format** | **iOS**: CoreML `.mlpackage` FP16 / INT8 <br>**Android**: ONNX FP32 / INT8 (via `QLinearConv`) |
 
-**Why MERT**: Purpose-built for music understanding. Directly ingests raw audio — no manual feature extraction needed. Captures both timbral and structural features through dual-teacher SSL (acoustic RVQ-VAE + musical CQT). On-device deployment eliminates cloud GPU hosting costs and connectivity issues in loud venues/festivals.
+**Why MERT & MAM**: Purpose-built for music understanding. We adapt it to EDM using Masked Acoustic Modeling (MAM) with Acoustic (EnCodec/RVQ-VAE) and Musical (CQT) teachers. Parameter-Efficient Fine-Tuning (LoRA) is utilized for the downstream RaveNet classifier to prevent catastrophic forgetting.
 
-### Classification Head
+### Classification Head (RaveNet)
 
-```python
-nn.Sequential(
-    nn.LayerNorm(768),
-    nn.Linear(768, 256),
-    nn.ReLU(),
-    nn.Dropout(0.3),
-    nn.Linear(256, num_subgenres),
-)
-```
+The classification head is a hierarchical multi-label DAG-aware classifier. Instead of standard cross-entropy, the projection layer uses Supervised Contrastive Learning (SupCon) to group samples into a Prototypical Contrastive Learning Space. This enables a Nearest Centroid Classifier that handles multi-label samples and Few-Shot Class Incremental Learning (FSCIL) for instant, user-driven taxonomy expansion without full retraining.
 
 ### Fallback / Comparison Models
 
@@ -60,19 +65,22 @@ nn.Sequential(
 
 ---
 
-## Audio Feature Extraction (Supplementary)
+## Audio Feature & Metadata Extraction
 
-> **Note**: MERT ingests raw audio directly. Librosa is retained for data augmentation, preprocessing, and any tempo-feature fusion experiments.
+> **Note**: While MERT ingests raw audio directly, we utilize Librosa for enhanced metadata extraction (Phase 9) and robust file conversion (Phase 10).
 
 | Tool / Library | Purpose |
 |---|---|
-| [Librosa](https://librosa.org/) | Audio preprocessing, BPM detection, tempogram extraction for augmentation |
+| **Librosa** | Extracting Tempo (BPM), Key Signature, and audio preprocessing |
+| **FFmpeg/yt-dlp** | Stripping audio from video uploads (MP4, MOV) and converting various formats (FLAC, MP3, WAV, AAC, OGG) to 24kHz mono |
 
 ### Audio Preprocessing Pipeline
-1. **Capture**: 30-second audio clip from mobile microphone (fixed shape for MVP)
-2. **Resample**: Native on-device conversion to 24kHz mono (MERT's expected input format)
-3. **Normalize**: Peak normalize to [-1, 1]
-4. **Execute**: Run on-device inference using embedded CoreML (iOS) or ONNX Runtime (Android) model
+1. **Upload/Capture**: User uploads a file (audio/video) to Web MVP, or captures via mobile mic.
+2. **Extraction**: If video, seamlessly strip audio stream.
+3. **Resample**: Convert to 24kHz mono (MERT's expected input format).
+4. **Metadata Extraction**: Use Librosa to compute BPM and key signature for UI display.
+5. **Normalize**: Peak normalize to [-1, 1].
+6. **Execute**: Run inference using the Web/Cloud pipeline (Web MVP) or embedded CoreML/ONNX model (Mobile MVP).
 
 ---
 
@@ -100,15 +108,15 @@ nn.Sequential(
 
 ---
 
-## Backend & Infrastructure (Lightweight MVP)
+## Web MVP, Backend & Infrastructure
 
 | Technology | Purpose |
 |---|---|
-| **Python (FastAPI)** | Lightweight backend API for syncing user profiles, history, and feedback |
-| **PostgreSQL** or **SQLite** | Database for storing user accounts, ratings, history, and RLHF tags |
+| **Web Browser MVP** | Hosted on GitHub Pages, providing file upload, annotation tabs, and PulseRoots taxonomy integrations |
+| **Python (FastAPI)** | Lightweight backend API for ML routing (Web MVP), syncing profiles, and feedback |
+| **GCP Cloud Database** | Centralized Postgres database for storing user accounts, annotations, RLHF tags, and audio clip references |
+| **GCP Compute** | Used for dataset downloading, MAM pre-training, fine-tuning, and offline retraining workloads |
 | **Docker** | Containerized deployment of backend services |
-| **Fly.io / AWS Lightsail / Supabase** | Cost-effective, CPU-only hosting for the API and database (NO active GPU hosting required) |
-| **GCP (Phase 4 & Retraining)** | Used in Phase 4 for dataset download/MAM pre-training/fine-tuning, and offline retraining workloads |
 
 ### Hardware & Inference Requirements
 
@@ -121,7 +129,7 @@ nn.Sequential(
 
 ---
 
-## Recommendation Engine (Phase 8)
+## Recommendation Engine (Phase 14)
 
 | Approach | Description |
 |---|---|
@@ -133,18 +141,17 @@ nn.Sequential(
 
 ---
 
-## RLHF / Feedback Loop (Phase 7+)
+## User Profiles & Feedback Loop (Phase 13)
 
-```
-User hears track → App predicts "Melodic Techno"
-                      ↓
-            User confirms ✅ or corrects → "Progressive House"
-                      ↓
-            Feedback stored in database
-                      ↓
-            Periodic fine-tuning of classification head
-                      ↓
-            (Future) Qwen2-Audio reasoning layer for ambiguous cases
+```mermaid
+graph TD
+    A[User hears clip or uses Annotation Tab] --> B{App predicts 'Melodic Techno'}
+    B -- Agrees --> C[Confirm ✅]
+    B -- Disagrees --> D[Select from PulseRoots Taxonomy]
+    C --> E[Feedback synced to GCP Database]
+    D --> E
+    E --> F[FSCIL: Update Nearest Centroid Prototypes]
+    E --> G[Periodic MAM Encoder Fine-Tuning]
 ```
 
 ---
